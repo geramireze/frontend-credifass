@@ -1,0 +1,247 @@
+<div class="p-4 md:p-8 max-w-7xl mx-auto">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm mb-6" aria-label="Ruta de navegación">
+    <a routerLink="/prestamos" class="text-primary hover:underline">Préstamos</a>
+    <app-icon name="chevron-right" [size]="14" class="text-app-muted-fg" />
+    <span class="text-app-muted-fg">Nuevo Préstamo</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h1 class="page-title">Nuevo Préstamo</h1>
+      <p class="page-sub">Completa los datos y revisa la simulación antes de confirmar</p>
+    </div>
+    <!-- Step indicator -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center">1</div>
+        <span class="text-sm font-semibold text-primary">Datos del préstamo</span>
+      </div>
+      <div class="w-10 h-0.5 bg-app-muted"></div>
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full border-2 text-xs font-semibold flex items-center justify-center"
+             [class.border-primary]="simulacion()" [class.text-primary]="simulacion()"
+             [class.border-app-border]="!simulacion()" [class.text-app-muted-fg]="!simulacion()">2</div>
+        <span class="text-sm font-medium" [class.text-primary]="simulacion()" [class.text-app-muted-fg]="!simulacion()">Simulación</span>
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="flex flex-col lg:flex-row gap-6 items-start">
+
+      <!-- ─── LEFT: Form card ─────────────────────────── -->
+      <div class="card p-6 flex-1 min-w-0">
+        <h2 class="text-base font-semibold text-app-fg mb-5">Datos del préstamo</h2>
+
+        <!-- Condiciones fijas del sistema -->
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-primary-light/30 border border-primary/20 mb-5">
+          <app-icon name="info" [size]="16" class="text-primary shrink-0" />
+          <p class="text-sm text-primary font-medium">Tasa fija: <strong>20%</strong> &bull; Plazo: <strong>6 semanas</strong></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Cliente -->
+          <div>
+            <label class="app-label" for="cliente_id">Cliente *</label>
+            <select id="cliente_id" formControlName="cliente_id" class="app-select"
+                    [class.border-status-error]="campo('cliente_id')">
+              <option value="">Seleccionar cliente…</option>
+              @for (c of clientes(); track c.id) {
+                <option [value]="c.id">{{ c.nombre }} — {{ c.documento }}</option>
+              }
+            </select>
+            @if (campo('cliente_id')) {
+              <p class="text-xs text-status-error-fg mt-1">El cliente es requerido</p>
+            }
+          </div>
+
+          <!-- Cobrador -->
+          <div>
+            <label class="app-label" for="cobrador_id">Cobrador <span class="text-app-muted-fg">(opcional)</span></label>
+            <input id="cobrador_id" type="text" formControlName="cobrador_id" class="app-input"
+                   placeholder="ID del cobrador…" />
+          </div>
+
+          <!-- Monto -->
+          <div>
+            <label class="app-label" for="monto_prestado">Monto prestado (COP) *</label>
+            <input id="monto_prestado" type="number" formControlName="monto_prestado" class="app-input"
+                   [class.border-status-error]="campo('monto_prestado')"
+                   min="50000" step="10000" placeholder="500.000" />
+            @if (campo('monto_prestado')) {
+              <p class="text-xs text-status-error-fg mt-1">Mínimo $ 50.000</p>
+            }
+          </div>
+
+          <!-- Fecha inicio -->
+          <div>
+            <label class="app-label" for="fecha_inicio">Fecha de inicio *</label>
+            <input id="fecha_inicio" type="date" formControlName="fecha_inicio" class="app-input"
+                   [class.border-status-error]="campo('fecha_inicio')"
+                   [max]="maxFecha" />
+            @if (campo('fecha_inicio')) {
+              <p class="text-xs text-status-error-fg mt-1">La fecha es requerida</p>
+            }
+          </div>
+        </div>
+
+        <!-- Frecuencia de pago -->
+        <div class="mt-5">
+          <p class="app-label mb-2">Frecuencia de pago</p>
+          <div class="flex gap-3" role="radiogroup" aria-label="Frecuencia de pago">
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" formControlName="frecuencia_pago" value="semanal" class="sr-only" />
+              <div class="flex flex-col items-center gap-1 p-4 rounded-xl border-2 transition-all"
+                   [class.border-primary]="frecuencia() === 'semanal'"
+                   [class.bg-primary-light]="frecuencia() === 'semanal'"
+                   [class.border-app-border]="frecuencia() !== 'semanal'"
+                   [class.bg-white]="frecuencia() !== 'semanal'">
+                <app-icon name="calendar" [size]="20"
+                          [class.text-primary]="frecuencia() === 'semanal'"
+                          [class.text-app-muted-fg]="frecuencia() !== 'semanal'" />
+                <span class="text-sm font-semibold"
+                      [class.text-primary]="frecuencia() === 'semanal'"
+                      [class.text-app-fg]="frecuencia() !== 'semanal'">Semanal</span>
+                <span class="text-xs text-app-muted-fg">6 cuotas · cada 7 días</span>
+              </div>
+            </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" formControlName="frecuencia_pago" value="quincenal" class="sr-only" />
+              <div class="flex flex-col items-center gap-1 p-4 rounded-xl border-2 transition-all"
+                   [class.border-primary]="frecuencia() === 'quincenal'"
+                   [class.bg-primary-light]="frecuencia() === 'quincenal'"
+                   [class.border-app-border]="frecuencia() !== 'quincenal'"
+                   [class.bg-white]="frecuencia() !== 'quincenal'">
+                <app-icon name="calendar-days" [size]="20"
+                          [class.text-primary]="frecuencia() === 'quincenal'"
+                          [class.text-app-muted-fg]="frecuencia() !== 'quincenal'" />
+                <span class="text-sm font-semibold"
+                      [class.text-primary]="frecuencia() === 'quincenal'"
+                      [class.text-app-fg]="frecuencia() !== 'quincenal'">Quincenal</span>
+                <span class="text-xs text-app-muted-fg">3 cuotas · cada 15 días</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Mora checkbox -->
+        <div class="mt-5 pt-4 border-t border-app-border">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" formControlName="mora_activa" class="w-4 h-4 rounded border-app-border accent-primary" />
+            <div>
+              <span class="text-sm text-app-fg font-medium">Activar mora</span>
+              <p class="text-xs text-app-muted-fg">Aplica cargo por días de atraso</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Notas -->
+        <div class="mt-4">
+          <label class="app-label" for="notas">Observaciones <span class="text-app-muted-fg">(opcional)</span></label>
+          <textarea id="notas" formControlName="notas" rows="2"
+                    class="app-input h-auto resize-none py-2"
+                    placeholder="Observaciones del préstamo…"></textarea>
+        </div>
+      </div>
+
+      <!-- ─── RIGHT: Simulation panel ─────────────────── -->
+      <div class="card p-6 lg:w-96 w-full">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-app-fg">Simulación</h2>
+          @if (loadingSimulacion()) {
+            <app-icon name="loader" [size]="16" class="spin text-primary" />
+          }
+        </div>
+
+        @if (!simulacion() && !loadingSimulacion()) {
+          <div class="py-10 text-center">
+            <app-icon name="calculator" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
+            <p class="text-sm text-app-muted-fg">Ingresa el monto y la fecha para ver la simulación.</p>
+          </div>
+        }
+
+        @if (simulacion(); as sim) {
+          <!-- Summary -->
+          <div class="rounded-lg bg-accent border border-app-border p-4 space-y-3 mb-4">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-app-muted-fg">Monto prestado</span>
+              <span class="text-sm font-semibold text-app-fg">{{ form.get('monto_prestado')?.value | cop }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-app-muted-fg">Total intereses (20%)</span>
+              <span class="text-sm font-semibold text-app-fg">{{ sim.montoTotal - (form.get('monto_prestado')?.value ?? 0) | cop }}</span>
+            </div>
+            <div class="border-t border-app-border pt-3 flex justify-between items-center">
+              <span class="text-sm font-semibold text-app-fg">Total a pagar</span>
+              <span class="text-base font-bold text-primary">{{ sim.montoTotal | cop }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-app-muted-fg">Valor por cuota</span>
+              <span class="text-xl font-bold text-primary">{{ sim.cuotaSemanal | cop }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-app-muted-fg">N.° de cuotas</span>
+              <span class="text-sm font-semibold text-app-fg">{{ nCuotas() }} {{ frecuencia() === 'semanal' ? 'semanales' : 'quincenales' }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-app-muted-fg">Vencimiento</span>
+              <span class="text-sm font-semibold text-app-fg">{{ formatFecha(sim.fechaVencimiento) }}</span>
+            </div>
+          </div>
+
+          <!-- Cronograma -->
+          @if (sim.cronograma && sim.cronograma.length) {
+            <div class="mb-4">
+              <p class="text-sm font-semibold text-app-fg mb-2">Cronograma de cuotas</p>
+              <div class="rounded-lg border border-app-border overflow-hidden">
+                <table class="w-full text-xs" aria-label="Cronograma simulado">
+                  <thead>
+                    <tr class="bg-app-muted">
+                      <th class="px-3 py-2 text-left text-app-muted-fg font-semibold w-8">#</th>
+                      <th class="px-3 py-2 text-left text-app-muted-fg font-semibold">Fecha</th>
+                      <th class="px-3 py-2 text-right text-app-muted-fg font-semibold">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of sim.cronograma; track c.numero) {
+                      <tr class="border-t border-app-border">
+                        <td class="px-3 py-2 font-mono text-app-muted-fg">{{ c.numero }}</td>
+                        <td class="px-3 py-2">{{ formatFecha(c.fechaEsperada) }}</td>
+                        <td class="px-3 py-2 text-right font-medium">{{ c.valor | cop }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- Warning + confirm -->
+          <div class="flex items-start gap-2 p-3 rounded-lg bg-status-warning-light border border-status-warning-light mb-4">
+            <app-icon name="alert-triangle" [size]="14" class="text-status-warning-fg shrink-0 mt-0.5" />
+            <p class="text-xs text-status-warning-fg">Esta acción creará el préstamo y su cronograma. No se puede deshacer.</p>
+          </div>
+
+          <button type="submit" class="btn-primary w-full" [disabled]="loading()">
+            @if (loading()) {
+              <app-icon name="loader" [size]="14" class="spin" />
+            }
+            Confirmar Préstamo
+          </button>
+        }
+      </div>
+
+    </div>
+  </form>
+
+</div>

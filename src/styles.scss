@@ -1,1 +1,215 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── CSS Variables (Pencil design tokens) ── */
+:root {
+  --primary:          #6366F1;
+  --primary-hover:    #4F46E5;
+  --primary-light:    #EEF2FF;
+  --bg:               #F8FAFC;
+  --card:             #FFFFFF;
+  --border:           #E2E8F0;
+  --muted:            #F1F5F9;
+  --muted-fg:         #64748B;
+  --fg:               #0F172A;
+  --fg-2:             #334155;
+  --sidebar-bg:       #1E293B;
+  --sidebar-text:     #CBD5E1;
+  --radius-sm:        4px;
+  --radius:           8px;
+  --radius-lg:        12px;
+  --radius-xl:        16px;
+}
+
+/* ── Utility: scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+
+/* ── Form base resets ── */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+/* ── App input field ── */
+@layer components {
+  .app-input {
+    @apply w-full h-10 rounded border border-app-border bg-white px-3 text-sm text-app-fg
+           placeholder:text-app-muted-fg
+           focus:border-primary focus:ring-2 focus:ring-primary/20
+           transition-colors;
+  }
+
+  .app-select {
+    @apply w-full h-10 rounded border border-app-border bg-white px-3 text-sm text-app-fg
+           focus:border-primary focus:ring-2 focus:ring-primary/20
+           transition-colors appearance-none cursor-pointer;
+  }
+
+  .app-label {
+    @apply block text-xs font-medium text-app-fg mb-1;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 h-10 px-4 rounded text-sm font-medium
+           transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+           disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply btn bg-app-muted text-app-fg-2 hover:bg-app-border;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-app-muted-fg hover:bg-app-muted hover:text-app-fg;
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded text-app-muted-fg
+           hover:bg-app-muted hover:text-app-fg transition-colors cursor-pointer;
+  }
+
+  .btn-danger {
+    @apply btn bg-status-error text-white hover:bg-red-600;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-card border border-app-border;
+  }
+
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-app-fg;
+  }
+
+  .page-sub {
+    @apply text-sm text-app-muted-fg mt-0.5;
+  }
+
+  /* Table */
+  .data-table { @apply w-full; }
+  .data-table-header {
+    @apply flex items-center bg-app-muted px-4 h-11 text-xs font-semibold text-app-muted-fg uppercase tracking-wide;
+  }
+  .data-table-row {
+    @apply flex items-center px-4 h-14 border-b border-app-border last:border-b-0
+           hover:bg-app-bg/60 transition-colors;
+  }
+
+  /* Badge / pill */
+  .badge {
+    @apply inline-flex items-center justify-center rounded-pill px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+  }
+
+  .badge-success  { @apply badge bg-status-al-dia-light text-status-al-dia-fg; }
+  .badge-mora     { @apply badge bg-status-mora-light text-status-mora-fg; }
+  .badge-pendiente{ @apply badge bg-status-pendiente-light text-status-pendiente-fg; }
+  .badge-pagado   { @apply badge bg-status-pagado-light text-status-pagado-fg; }
+  .badge-cancelado{ @apply badge bg-status-cancelado-light text-status-cancelado; }
+  .badge-info     { @apply badge bg-status-info-light text-status-info-fg; }
+  .badge-warning  { @apply badge bg-status-warning-light text-status-warning-fg; }
+  .badge-error    { @apply badge bg-status-error-light text-status-error-fg; }
+
+  /* Role badges */
+  .role-admin       { @apply badge bg-primary-light text-primary; }
+  .role-supervisor  { @apply badge bg-purple-100 text-purple-700; }
+  .role-cobrador    { @apply badge bg-status-success-light text-status-success-fg; }
+
+  /* Alert banners */
+  .alert {
+    @apply flex items-start gap-3 rounded-lg border px-4 py-3 text-sm;
+  }
+  .alert-error   { @apply alert border-status-error-light bg-status-error-light text-status-error-fg; }
+  .alert-warning { @apply alert border-status-warning-light bg-status-warning-light text-status-warning-fg; }
+  .alert-success { @apply alert border-status-success-light bg-status-success-light text-status-success-fg; }
+  .alert-info    { @apply alert border-status-info-light bg-status-info-light text-status-info-fg; }
+
+  /* Pagination button */
+  .pg-btn {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded text-sm font-medium
+           cursor-pointer transition-colors select-none;
+  }
+  .pg-btn-default { @apply pg-btn bg-app-muted text-app-fg-2 hover:bg-app-border; }
+  .pg-btn-active  { @apply pg-btn bg-primary text-white; }
+  .pg-btn-disabled{ @apply pg-btn opacity-40 cursor-not-allowed; }
+}
+
+/* ── Spin animation ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; }
+
+/* ── Responsive Table — stacked card layout on mobile ── */
+@media (max-width: 1023px) {
+  .rt { display: block !important; }
+  .rt thead { display: none; }
+  .rt tbody { display: block; }
+
+  .rt tr:not(.rt-full) {
+    display: block;
+    height: auto !important;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .rt tr:not(.rt-full) td {
+    display: flex !important;
+    height: auto !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 0.875rem;
+    text-align: left !important;
+  }
+
+  .rt tr:not(.rt-full) td:last-child { border-bottom: none; }
+
+  .rt tr:not(.rt-full) td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    min-width: 5.5rem;
+  }
+
+  .rt tr.rt-full {
+    display: block;
+    height: auto !important;
+    margin-bottom: 0.75rem;
+  }
+
+  .rt tr.rt-full td {
+    display: block;
+    padding: 1rem;
+  }
+}

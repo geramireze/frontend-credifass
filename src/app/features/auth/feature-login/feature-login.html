@@ -1,0 +1,166 @@
+<!-- ────────────────────────────────────────────────────────────────────
+  Mobile / Tablet: single centred panel  (< lg)
+  Desktop:         two-panel split       (>= lg)
+──────────────────────────────────────────────────────────────────── -->
+<div class="min-h-screen bg-[#F8FAFC] flex">
+
+  <!-- ── LEFT brand panel — desktop only ───────────────────── -->
+  <div class="hidden lg:flex flex-col justify-end bg-[#6366F1] w-[560px] shrink-0 p-12 gap-6">
+    <div class="flex items-center justify-center w-14 h-14 rounded-xl bg-white/20">
+      <app-icon name="banknote" [size]="28" class="text-white" />
+    </div>
+    <div class="flex flex-col gap-4">
+      <h1 class="text-4xl font-bold text-white leading-tight">CrediFass</h1>
+      <p class="text-[#C7D2FE] text-base leading-relaxed max-w-[460px]">
+        Crédito al instante y rápido.<br>
+        Control total de cobranza, clientes y reportes.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── RIGHT / FULL form panel ───────────────────────────── -->
+  <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
+    <div class="w-full max-w-[400px]">
+
+      <!-- Mobile / Tablet brand header -->
+      <div class="lg:hidden text-center mb-9 flex flex-col items-center gap-3">
+        <div data-testid="brand-logo" class="flex items-center justify-center w-14 h-14 rounded-xl bg-[#6366F1]">
+          <app-icon name="banknote" [size]="28" class="text-white" />
+        </div>
+        <h1 class="text-2xl font-bold text-[#0F172A]">CrediFass</h1>
+        <p class="text-[#64748B] text-sm">Crédito al instante y rápido</p>
+      </div>
+
+      <!-- Form card (tablet gets card border, mobile/desktop seamless) -->
+      <div class="bg-white rounded-xl border border-[#E2E8F0] p-8 shadow-sm flex flex-col gap-8">
+
+        <!-- Header -->
+        <div class="flex flex-col gap-2">
+          <h2 class="text-[28px] font-bold text-[#0F172A] leading-tight">Iniciar sesión</h2>
+          <p class="text-[#64748B] text-sm">Ingresa tus credenciales para acceder al sistema</p>
+        </div>
+
+        <!-- Error alert -->
+        @if (store.error()) {
+          <div role="alert" class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <app-icon name="alert-circle" [size]="16" class="shrink-0 text-red-500" />
+            <span>{{ store.error() }}</span>
+          </div>
+        }
+
+        <!-- Fields -->
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="flex flex-col gap-4">
+
+          <!-- Email -->
+          <div class="flex flex-col gap-1.5">
+            <label for="login-email" class="text-[13px] font-medium text-[#0F172A]">
+              Correo electrónico
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none">
+                <app-icon name="mail" [size]="15" />
+              </span>
+              <input
+                id="login-email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="correo@ejemplo.com"
+                aria-required="true"
+                class="w-full h-11 rounded-lg border border-[#E2E8F0] bg-white pl-10 pr-3.5 text-sm text-[#0F172A]
+                       placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-[#6366F1]
+                       transition-shadow"
+              />
+            </div>
+            @if (form.get('email')?.invalid && form.get('email')?.touched) {
+              <p class="text-xs text-red-600">
+                @if (form.get('email')?.errors?.['required']) { El correo es obligatorio. }
+                @else { Ingresa un correo válido. }
+              </p>
+            }
+          </div>
+
+          <!-- Password -->
+          <div class="flex flex-col gap-1.5">
+            <label for="login-password" class="text-[13px] font-medium text-[#0F172A]">
+              Contraseña
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none">
+                <app-icon name="lock" [size]="15" />
+              </span>
+              <input
+                id="login-password"
+                [type]="verPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                aria-required="true"
+                class="w-full h-11 rounded-lg border border-[#E2E8F0] bg-white pl-10 pr-11 text-sm text-[#0F172A]
+                       focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-[#6366F1]
+                       transition-shadow"
+              />
+              <button
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] p-0.5
+                       focus:outline-none focus:ring-2 focus:ring-[#6366F1] rounded"
+                (click)="verPassword.set(!verPassword())"
+                [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                <app-icon [name]="verPassword() ? 'eye-off' : 'eye'" [size]="16" />
+              </button>
+            </div>
+            @if (form.get('password')?.invalid && form.get('password')?.touched) {
+              <p class="text-xs text-red-600">La contraseña debe tener al menos 6 caracteres.</p>
+            }
+          </div>
+
+          <!-- Recordarme + forgot password -->
+          <div class="flex items-center justify-between -mt-1">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                [checked]="recordarme()"
+                (change)="recordarme.set($any($event.target).checked)"
+                class="w-4 h-4 rounded border-[#E2E8F0] text-[#6366F1] focus:ring-[#6366F1] focus:ring-offset-0"
+              />
+              <span class="text-[13px] text-[#64748B]">Recordarme</span>
+            </label>
+            <a
+              routerLink="/olvide-contrasena"
+              class="text-[13px] font-medium text-[#6366F1] hover:underline focus:outline-none focus:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
+
+          <!-- Submit -->
+          <button
+            type="submit"
+            class="w-full h-11 rounded-lg bg-[#6366F1] text-white text-sm font-semibold
+                   hover:bg-[#4F46E5] active:bg-[#4338CA]
+                   focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:ring-offset-2
+                   disabled:opacity-60 disabled:cursor-not-allowed
+                   flex items-center justify-center gap-2 transition-colors"
+            [disabled]="store.loading()"
+          >
+            @if (store.loading()) {
+              <app-icon name="loader" [size]="16" class="spin" />
+              Ingresando…
+            } @else {
+              Iniciar sesión
+            }
+          </button>
+
+        </form>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-center gap-1 text-[13px]">
+          <span class="text-[#64748B]">¿No tienes cuenta?</span>
+          <span class="font-medium text-[#6366F1]">Contacta al administrador</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

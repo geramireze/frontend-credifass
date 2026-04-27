@@ -1,0 +1,120 @@
+<div class="p-4 md:p-8">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Préstamos</h1>
+      <p class="page-sub">Gestión de préstamos activos</p>
+    </div>
+    @if (puedeCriar()) {
+      <a routerLink="nuevo" class="btn-primary flex items-center gap-2" aria-label="Crear nuevo préstamo">
+        <app-icon name="plus" [size]="16" />
+        Nuevo préstamo
+      </a>
+    }
+  </div>
+
+  <!-- Loading bar -->
+  @if (store.loading()) {
+    <div class="h-1 w-full bg-app-border rounded overflow-hidden mb-2" aria-label="Cargando préstamos">
+      <div class="h-full bg-primary animate-pulse w-1/2 rounded"></div>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (store.error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span class="flex-1">{{ store.error() }}</span>
+      <button type="button" class="btn-ghost text-xs px-2 h-7" (click)="store.cargarLista()">Reintentar</button>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!store.loading() && store.items().length === 0) {
+    <div class="card flex flex-col items-center justify-center py-20 text-app-muted-fg">
+      <app-icon name="banknote" [size]="48" class="mb-4 opacity-50" />
+      <p class="text-lg font-medium">Sin préstamos</p>
+      <p class="text-sm mt-1">No hay préstamos registrados.</p>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (store.items().length > 0) {
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full rt lg:min-w-[860px]" aria-label="Lista de préstamos">
+          <thead>
+            <tr class="bg-app-muted border-b border-app-border h-11">
+              <th class="px-4 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cliente</th>
+              <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Fecha</th>
+              <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Monto</th>
+              <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuota</th>
+              <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Sem.</th>
+              <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Estado</th>
+              <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuotas</th>
+              <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Saldo</th>
+              <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cobrador</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of store.items(); track p.id) {
+              <tr class="border-b border-app-border last:border-b-0 h-14 hover:bg-app-muted/40 transition-colors cursor-pointer"
+                  [routerLink]="[p.id]">
+                <td class="px-4 text-sm font-medium text-app-fg truncate" data-label="Cliente">{{ p.cliente_nombre }}</td>
+                <td class="px-3 text-sm text-app-muted-fg whitespace-nowrap" data-label="Fecha">{{ formatFecha(p.fecha_inicio) }}</td>
+                <td class="px-3 text-sm font-medium text-app-fg text-right whitespace-nowrap" data-label="Monto">{{ p.monto_prestado | cop }}</td>
+                <td class="px-3 text-sm text-app-muted-fg text-right whitespace-nowrap" data-label="Cuota">{{ p.cuota_semanal | cop }}</td>
+                <td class="px-3 text-sm text-app-muted-fg text-center" data-label="Sem.">{{ p.numero_semanas }}</td>
+                <td class="px-3" data-label="Estado">
+                  <span class="whitespace-nowrap" [class]="estadoBadge(p.estado)">{{ estadoLabel(p.estado) }}</span>
+                </td>
+                <td class="px-3 text-sm text-app-muted-fg font-mono text-center" data-label="Cuotas">{{ cuotasLabel(p.cuotas_pagadas, p.numero_semanas) }}</td>
+                <td class="px-3 text-right" data-label="Saldo">
+                  <div class="flex flex-col items-end">
+                    <span class="text-sm font-medium text-app-fg whitespace-nowrap">{{ p.saldo_pendiente | cop }}</span>
+                    @if (p.mora_acumulada > 0) {
+                      <span class="text-xs text-red-600 whitespace-nowrap">+{{ p.mora_acumulada | cop }} mora</span>
+                    }
+                  </div>
+                </td>
+                <td class="px-3 text-sm text-app-muted-fg truncate" data-label="Cobrador">{{ p.cobrador_nombre ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between px-5 py-3 border-t border-app-border">
+        <span class="text-sm text-app-muted-fg">
+          Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de {{ store.total() }}
+        </span>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            class="pg-btn-default"
+            [class.pg-btn-disabled]="store.page() <= 1"
+            [disabled]="store.page() <= 1"
+            (click)="paginarPrev()"
+            aria-label="Página anterior"
+          >
+            <app-icon name="chevron-left" [size]="14" />
+          </button>
+          <span class="pg-btn-active">{{ store.page() }}</span>
+          <button
+            type="button"
+            class="pg-btn-default"
+            [class.pg-btn-disabled]="store.page() >= totalPages()"
+            [disabled]="store.page() >= totalPages()"
+            (click)="paginarNext()"
+            aria-label="Página siguiente"
+          >
+            <app-icon name="chevron-right" [size]="14" />
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

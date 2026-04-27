@@ -1,0 +1,143 @@
+<div class="p-4 md:p-8 max-w-2xl mx-auto">
+
+  <!-- Back -->
+  <a routerLink="/clientes" class="inline-flex items-center gap-1.5 text-sm text-app-muted-fg hover:text-app-fg mb-6">
+    <app-icon name="chevron-left" [size]="14" />
+    Volver a clientes
+  </a>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ esEdicion() ? 'Editar cliente' : 'Nuevo cliente' }}</h1>
+      <p class="page-sub">{{ esEdicion() ? 'Actualiza los datos del cliente' : 'Registra un nuevo cliente en el sistema' }}</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="card p-6 space-y-5">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Nombre -->
+        <div>
+          <label class="app-label" for="nombre">Nombre completo *</label>
+          <input id="nombre" type="text" formControlName="nombre" class="app-input"
+                 [class.border-status-error]="campo('nombre')" placeholder="Juan García" />
+          @if (campo('nombre')) {
+            <p class="text-xs text-status-error-fg mt-1">El nombre es requerido (mín. 2 caracteres)</p>
+          }
+        </div>
+
+        <!-- Documento -->
+        <div>
+          <label class="app-label" for="documento">Número de documento *</label>
+          <input id="documento" type="text" formControlName="documento" class="app-input"
+                 [class.border-status-error]="campo('documento')" placeholder="1234567890" />
+          @if (campo('documento')) {
+            <p class="text-xs text-status-error-fg mt-1">El documento es requerido</p>
+          }
+        </div>
+
+        <!-- Teléfono -->
+        <div>
+          <label class="app-label" for="telefono">Teléfono *</label>
+          <input id="telefono" type="tel" formControlName="telefono" class="app-input"
+                 [class.border-status-error]="campo('telefono')" placeholder="3001234567" />
+          @if (campo('telefono')) {
+            <p class="text-xs text-status-error-fg mt-1">El teléfono es requerido</p>
+          }
+        </div>
+
+        <!-- Ciudad -->
+        <div>
+          <label class="app-label" for="ciudad">Ciudad *</label>
+          <input id="ciudad" type="text" formControlName="ciudad" class="app-input"
+                 [class.border-status-error]="campo('ciudad')" placeholder="Bogotá" />
+          @if (campo('ciudad')) {
+            <p class="text-xs text-status-error-fg mt-1">La ciudad es requerida</p>
+          }
+        </div>
+      </div>
+
+      <!-- Dirección -->
+      <div>
+        <label class="app-label" for="direccion">Dirección *</label>
+        <input id="direccion" type="text" formControlName="direccion" class="app-input"
+               [class.border-status-error]="campo('direccion')" placeholder="Calle 123 #45-67" />
+        @if (campo('direccion')) {
+          <p class="text-xs text-status-error-fg mt-1">La dirección es requerida</p>
+        }
+      </div>
+
+      <!-- Notas -->
+      <div>
+        <label class="app-label" for="notas">Notas (opcional)</label>
+        <textarea id="notas" formControlName="notas" rows="2"
+                  class="app-input h-auto resize-none py-2"
+                  placeholder="Información adicional del cliente…"></textarea>
+      </div>
+    </div>
+
+    <!-- Referencias -->
+    <div class="card p-6 mt-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-app-fg">Referencias personales</h2>
+        <button type="button" class="btn-secondary text-xs h-8 px-3" (click)="agregarReferencia()">
+          <app-icon name="plus" [size]="12" class="mr-1" />
+          Agregar
+        </button>
+      </div>
+
+      @if (referencias.length === 0) {
+        <p class="text-sm text-app-muted-fg text-center py-4">Sin referencias. Agrega al menos una.</p>
+      }
+
+      <div formArrayName="referencias" class="space-y-4">
+        @for (_ of referencias.controls; track $index) {
+          <div [formGroupName]="$index" class="p-4 border border-app-border rounded-lg bg-app-muted/30 relative">
+            <button type="button" class="absolute top-3 right-3 btn-icon w-7 h-7"
+                    (click)="eliminarReferencia($index)" [attr.aria-label]="'Eliminar referencia ' + ($index + 1)">
+              <app-icon name="x" [size]="12" class="text-app-muted-fg" />
+            </button>
+            <p class="text-xs font-semibold text-app-muted-fg uppercase mb-3">Referencia {{ $index + 1 }}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label [for]="'ref-nombre-' + $index" class="app-label">Nombre *</label>
+                <input [id]="'ref-nombre-' + $index" type="text" formControlName="nombre" class="app-input"
+                       [class.border-status-error]="refCampo($index, 'nombre')" placeholder="María García" />
+              </div>
+              <div>
+                <label [for]="'ref-telefono-' + $index" class="app-label">Teléfono *</label>
+                <input [id]="'ref-telefono-' + $index" type="tel" formControlName="telefono" class="app-input"
+                       [class.border-status-error]="refCampo($index, 'telefono')" placeholder="3009876543" />
+              </div>
+              <div>
+                <label [for]="'ref-parentesco-' + $index" class="app-label">Parentesco *</label>
+                <input [id]="'ref-parentesco-' + $index" type="text" formControlName="parentesco" class="app-input"
+                       [class.border-status-error]="refCampo($index, 'parentesco')" placeholder="Esposa" />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-3 mt-6">
+      <a routerLink="/clientes" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary" [disabled]="loading()">
+        @if (loading()) {
+          <app-icon name="loader" [size]="14" class="spin" />
+        }
+        {{ esEdicion() ? 'Guardar cambios' : 'Crear cliente' }}
+      </button>
+    </div>
+  </form>
+
+</div>

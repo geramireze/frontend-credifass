@@ -1,0 +1,304 @@
+<div class="p-4 md:p-8">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Cobros del día</h1>
+      <p class="page-sub">Ruta de cobro asignada para hoy</p>
+    </div>
+    <button type="button" class="btn-secondary flex items-center gap-2" (click)="store.cargarRuta()" [disabled]="store.loading()" aria-label="Actualizar ruta">
+      <app-icon name="refresh-cw" [size]="16" [class]="store.loading() ? 'spin' : ''" />
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Loading bar -->
+  @if (store.loading() && !store.ruta()) {
+    <div class="h-1 w-full bg-app-border rounded overflow-hidden mb-4" aria-label="Cargando ruta">
+      <div class="h-full bg-primary animate-pulse w-1/2 rounded"></div>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (store.error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span class="flex-1">{{ store.error() }}</span>
+      <button type="button" class="btn-ghost text-xs px-2 h-7" (click)="store.cargarRuta()">Reintentar</button>
+    </div>
+  }
+
+  <!-- Success -->
+  @if (store.pagoExitoso()) {
+    <div role="status" class="alert-success mb-6">
+      <app-icon name="check-circle" [size]="16" class="shrink-0" />
+      <span class="font-medium">Pago registrado correctamente.</span>
+    </div>
+  }
+
+  @if (store.ruta(); as r) {
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="card p-5 flex flex-col gap-2">
+        <p class="text-xs text-app-muted-fg font-medium uppercase tracking-wide">Cuotas por cobrar</p>
+        <p class="text-[28px] font-bold text-app-fg leading-none">{{ r.total_cuotas }}</p>
+        <p class="text-xs text-app-muted-fg">{{ (r.cobrado + r.pendiente) | cop }} total</p>
+      </div>
+      <div class="card p-5 flex flex-col gap-2">
+        <p class="text-xs text-app-muted-fg font-medium uppercase tracking-wide">Cobrado hoy</p>
+        <p class="text-[28px] font-bold text-green-600 leading-none">{{ r.cobrado | cop }}</p>
+        <p class="text-xs text-app-muted-fg">{{ r.total_cuotas - cuotasPendientesCount(r) }} pagos registrados</p>
+      </div>
+      <div class="card p-5 flex flex-col gap-2">
+        <p class="text-xs text-app-muted-fg font-medium uppercase tracking-wide">Pendiente del día</p>
+        <p class="text-[28px] font-bold text-amber-600 leading-none">{{ cuotasPendientesCount(r) }}</p>
+        <p class="text-xs text-app-muted-fg">{{ r.pendiente | cop }} restante</p>
+      </div>
+      <div class="card p-5 flex flex-col gap-2">
+        <p class="text-xs text-app-muted-fg font-medium uppercase tracking-wide">Mi cartera</p>
+        <p class="text-[28px] font-bold text-primary leading-none">{{ r.mi_cartera ?? r.cobrado + r.pendiente | cop }}</p>
+        <p class="text-xs text-app-muted-fg">activos asignados</p>
+      </div>
+    </div>
+
+    <!-- Table section -->
+    <div class="card overflow-hidden">
+      <!-- Table header with search -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-app-border">
+        <h2 class="text-base font-semibold text-app-fg">Cuotas por cobrar hoy</h2>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 h-9 px-3 rounded-lg border border-app-border bg-app-muted/40">
+            <app-icon name="search" [size]="14" class="text-app-muted-fg" />
+            <input
+              type="text"
+              [value]="filtro()"
+              (input)="filtro.set($any($event.target).value)"
+              placeholder="Buscar cliente..."
+              class="bg-transparent text-sm outline-none w-44 placeholder:text-app-muted-fg"
+              aria-label="Buscar cliente en ruta"
+            />
+          </div>
+        </div>
+      </div>
+
+      @if (cuotasFiltradas(r.cuotas).length === 0) {
+        <div class="flex items-center gap-3 px-5 py-4 text-green-700 bg-green-50 border-b border-app-border">
+          <app-icon name="check-circle" [size]="20" class="shrink-0" />
+          <p class="text-sm font-medium">¡Ruta de hoy completada! No hay cuotas pendientes para cobrar hoy.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full rt lg:min-w-[760px]" aria-label="Cuotas del día">
+            <thead>
+              <tr class="bg-app-muted border-b border-app-border h-11">
+                <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">#</th>
+                <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cliente</th>
+                <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Dirección</th>
+                <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuota</th>
+                <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Valor</th>
+                <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Estado</th>
+                <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Mora</th>
+                <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cuota of cuotasFiltradas(r.cuotas); track cuota.cuota_id; let idx = $index) {
+                <tr class="border-b border-app-border last:border-b-0 h-[52px] transition-colors"
+                    [class.bg-status-pendiente-light]="cuota.mora_acumulada > 0">
+                  <td class="px-3 text-sm text-app-muted-fg text-center font-mono" data-label="#">{{ idx + 1 }}</td>
+
+                  <td class="px-3" data-label="Cliente">
+                    <p class="text-sm font-medium text-app-fg truncate">{{ cuota.cliente_nombre }}</p>
+                    <p class="text-xs text-app-muted-fg">CC {{ cuota.cliente_documento }}</p>
+                  </td>
+
+                  <td class="px-3 text-xs text-app-muted-fg truncate" data-label="Dirección">
+                    {{ cuota.cliente_direccion || '—' }}
+                  </td>
+
+                  <td class="px-3 text-sm text-app-fg text-center whitespace-nowrap" data-label="Cuota">
+                    {{ cuota.cuota_numero }}/{{ cuota.cuotas_totales }}
+                  </td>
+
+                  <td class="px-3 text-sm font-semibold text-app-fg text-right whitespace-nowrap" data-label="Valor">{{ cuota.valor | cop }}</td>
+
+                  <td class="px-3" data-label="Estado">
+                    <span class="whitespace-nowrap" [class]="estadoCuotaBadge(cuota.estado)">{{ estadoCuotaLabel(cuota.estado) }}</span>
+                  </td>
+
+                  <td class="px-3 text-sm text-right whitespace-nowrap"
+                      data-label="Mora"
+                      [class.text-red-600]="cuota.mora_acumulada > 0"
+                      [class.font-medium]="cuota.mora_acumulada > 0"
+                      [class.text-app-muted-fg]="cuota.mora_acumulada === 0">
+                    {{ cuota.mora_acumulada > 0 ? (cuota.mora_acumulada | cop) : '—' }}
+                  </td>
+
+                  <td class="px-3" data-label="Acción">
+                    @if (store.cuotaSeleccionada()?.cuota_id !== cuota.cuota_id) {
+                      <div class="flex justify-center">
+                        <button
+                          type="button"
+                          class="btn-primary h-8 px-3 text-xs flex items-center gap-1"
+                          (click)="seleccionarCuota(cuota)"
+                          aria-label="Registrar pago de {{ cuota.cliente_nombre }}"
+                        >
+                          <app-icon name="plus" [size]="12" />
+                          Cobrar
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="text-xs text-primary font-medium">Registrando…</span>
+                    }
+                  </td>
+                </tr>
+
+                @if (store.cuotaSeleccionada()?.cuota_id === cuota.cuota_id) {
+                  <tr class="bg-primary-light/20 border-b border-app-border rt-full">
+                    <td colspan="8" class="px-4 py-4">
+                      <form [formGroup]="pagoForm" (ngSubmit)="registrarPago()" novalidate
+                            class="flex flex-wrap items-end gap-3">
+                        <div class="flex flex-col gap-1 min-w-[140px]">
+                          <label class="app-label">Monto del pago</label>
+                          <input type="number" formControlName="monto" min="1" class="app-input h-9"
+                                 aria-required="true" />
+                        </div>
+                        <div class="flex flex-col gap-1 flex-1 min-w-[160px]">
+                          <label class="app-label">Notas (opcional)</label>
+                          <input type="text" formControlName="notas" class="app-input h-9" />
+                        </div>
+                        <div class="flex gap-2 pb-0.5">
+                          <button type="submit" class="btn-primary h-9 px-4 text-sm flex items-center gap-2"
+                                  [disabled]="store.loading()" aria-label="Confirmar pago">
+                            @if (store.loading()) {
+                              <app-icon name="loader" [size]="14" class="spin" />
+                            }
+                            Registrar pago
+                          </button>
+                          <button type="button" class="btn-secondary h-9 px-3 text-sm" (click)="cancelarPago()" aria-label="Cancelar">
+                            Cancelar
+                          </button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- Próximas cuotas (pagos adelantados) -->
+      @if (r.proximas_cuotas && r.proximas_cuotas.length > 0) {
+        <div class="border-t border-app-border">
+          <div class="flex items-center justify-between px-5 py-4">
+            <div>
+              <h2 class="text-base font-semibold text-app-fg">Próximas cuotas (14 días)</h2>
+              <p class="text-xs text-app-muted-fg mt-0.5">Puedes registrar pagos adelantados</p>
+            </div>
+            <span class="text-xs bg-amber-100 text-amber-700 font-medium px-2 py-1 rounded-full">
+              {{ r.proximas_cuotas.length }} próximas
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full rt lg:min-w-[800px]" aria-label="Próximas cuotas para pago adelantado">
+              <thead>
+                <tr class="bg-app-muted border-b border-app-border h-11">
+                  <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Fecha</th>
+                  <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cliente</th>
+                  <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Dirección</th>
+                  <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuota</th>
+                  <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Valor</th>
+                  <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cuota of r.proximas_cuotas; track cuota.cuota_id; let idx = $index) {
+                  <tr class="border-b border-app-border last:border-b-0 h-[52px] transition-colors hover:bg-app-muted/30">
+                    <td class="px-3 text-sm text-app-muted-fg whitespace-nowrap" data-label="Fecha">
+                      {{ cuota.fecha_esperada | date:'dd/MM' }}
+                    </td>
+
+                    <td class="px-3" data-label="Cliente">
+                      <p class="text-sm font-medium text-app-fg truncate">{{ cuota.cliente_nombre }}</p>
+                      <p class="text-xs text-app-muted-fg">CC {{ cuota.cliente_documento }}</p>
+                    </td>
+
+                    <td class="px-3 text-xs text-app-muted-fg truncate" data-label="Dirección">
+                      {{ cuota.cliente_direccion || '—' }}
+                    </td>
+
+                    <td class="px-3 text-sm text-app-fg text-center whitespace-nowrap" data-label="Cuota">
+                      {{ cuota.cuota_numero }}/{{ cuota.cuotas_totales }}
+                    </td>
+
+                    <td class="px-3 text-sm font-semibold text-app-fg text-right whitespace-nowrap" data-label="Valor">
+                      {{ cuota.valor | cop }}
+                    </td>
+
+                    <td class="px-3" data-label="Acción">
+                      @if (store.cuotaSeleccionada()?.cuota_id !== cuota.cuota_id) {
+                        <div class="flex justify-center">
+                          <button
+                            type="button"
+                            class="btn-secondary h-8 px-3 text-xs flex items-center gap-1"
+                            (click)="seleccionarCuota(cuota)"
+                            aria-label="Pago adelantado de {{ cuota.cliente_nombre }}"
+                          >
+                            <app-icon name="plus" [size]="12" />
+                            Adelantar
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="text-xs text-primary font-medium">Registrando…</span>
+                      }
+                    </td>
+                  </tr>
+
+                  @if (store.cuotaSeleccionada()?.cuota_id === cuota.cuota_id) {
+                    <tr class="bg-amber-50/60 border-b border-app-border rt-full">
+                      <td colspan="6" class="px-4 py-4">
+                        <div class="flex items-center gap-2 mb-3 text-amber-700">
+                          <app-icon name="calendar-days" [size]="14" class="shrink-0" />
+                          <span class="text-xs font-medium">
+                            Pago adelantado — cuota prevista para el {{ cuota.fecha_esperada | date:'dd/MM/yyyy' }}
+                          </span>
+                        </div>
+                        <form [formGroup]="pagoForm" (ngSubmit)="registrarPago()" novalidate
+                              class="flex flex-wrap items-end gap-3">
+                          <div class="flex flex-col gap-1 min-w-[140px]">
+                            <label class="app-label">Monto del pago</label>
+                            <input type="number" formControlName="monto" min="1" class="app-input h-9"
+                                   aria-required="true" />
+                          </div>
+                          <div class="flex flex-col gap-1 flex-1 min-w-[160px]">
+                            <label class="app-label">Notas (opcional)</label>
+                            <input type="text" formControlName="notas" class="app-input h-9" />
+                          </div>
+                          <div class="flex gap-2 pb-0.5">
+                            <button type="submit" class="btn-primary h-9 px-4 text-sm flex items-center gap-2"
+                                    [disabled]="store.loading()" aria-label="Confirmar pago adelantado">
+                              @if (store.loading()) {
+                                <app-icon name="loader" [size]="14" class="spin" />
+                              }
+                              Registrar adelanto
+                            </button>
+                            <button type="button" class="btn-secondary h-9 px-3 text-sm" (click)="cancelarPago()" aria-label="Cancelar">
+                              Cancelar
+                            </button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div>

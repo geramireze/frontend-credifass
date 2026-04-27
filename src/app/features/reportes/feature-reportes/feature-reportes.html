@@ -1,0 +1,250 @@
+<div class="flex h-full min-h-screen bg-app-bg">
+
+  <!-- Sidebar: report type list (desktop only) -->
+  <aside class="hidden lg:flex w-64 shrink-0 border-r border-app-border bg-white overflow-y-auto flex-col">
+    <div class="p-4 border-b border-app-border">
+      <h1 class="text-base font-semibold text-app-fg">Reportes</h1>
+    </div>
+    <nav aria-label="Tipos de reporte">
+      @for (meta of reportesMeta; track meta.id) {
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 text-sm border-b border-app-border transition-colors"
+          [class.bg-primary]="store.reporteActivo() === meta.id"
+          [class.text-white]="store.reporteActivo() === meta.id"
+          [class.font-semibold]="store.reporteActivo() === meta.id"
+          [class.text-app-muted-fg]="store.reporteActivo() !== meta.id"
+          [class.hover:bg-gray-50]="store.reporteActivo() !== meta.id"
+          [attr.aria-current]="store.reporteActivo() === meta.id ? 'page' : null"
+          (click)="seleccionarReporte(meta.id)"
+        >
+          {{ meta.titulo }}
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+    <!-- Mobile/tablet report selector -->
+    <div class="lg:hidden bg-white border-b border-app-border px-4 py-3">
+      <label class="app-label mb-1 block" for="reporte-select">Tipo de reporte</label>
+      <select
+        id="reporte-select"
+        class="app-select w-full"
+        [ngModel]="store.reporteActivo()"
+        (ngModelChange)="seleccionarReporte($event)"
+        aria-label="Seleccionar tipo de reporte"
+      >
+        @for (meta of reportesMeta; track meta.id) {
+          <option [value]="meta.id">{{ meta.titulo }}</option>
+        }
+      </select>
+    </div>
+
+    @if (metaActiva(); as meta) {
+      <!-- Report header -->
+      <div class="bg-white border-b border-app-border px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-app-fg">{{ meta.titulo }}</h2>
+            <p class="text-sm text-app-muted-fg mt-0.5">{{ meta.descripcion }}</p>
+          </div>
+          <!-- Export buttons -->
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="btn-secondary flex items-center gap-2"
+              [disabled]="exportStore.loading()"
+              (click)="exportar('excel')"
+              aria-label="Exportar a Excel"
+            >
+              <app-icon name="file-spreadsheet" [size]="16" class="text-green-600" />
+              Excel
+            </button>
+            <button
+              type="button"
+              class="btn-secondary flex items-center gap-2"
+              [disabled]="exportStore.loading()"
+              (click)="exportar('pdf')"
+              aria-label="Exportar a PDF"
+            >
+              <app-icon name="file-text" [size]="16" class="text-red-600" />
+              PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Export status -->
+        @if (exportStore.loading()) {
+          <div class="mt-2 flex items-center gap-2 text-sm text-primary">
+            <app-icon name="loader" [size]="14" class="spin" />
+            Generando exportación…
+          </div>
+        }
+        @if (exportStore.jobId()) {
+          <div class="mt-2 flex items-center gap-2 text-sm text-amber-700">
+            <app-icon name="hourglass" [size]="14" />
+            El archivo está procesándose.
+            <button type="button" class="underline" (click)="exportStore.consultarJob()">Verificar estado</button>
+          </div>
+        }
+        @if (exportStore.error()) {
+          <div class="mt-2 flex items-center gap-2 text-sm text-red-600">
+            <app-icon name="alert-circle" [size]="14" />
+            {{ exportStore.error() }}
+            <button type="button" class="underline" (click)="exportStore.limpiarError()">Cerrar</button>
+          </div>
+        }
+      </div>
+
+      <!-- Filter bar -->
+      <div class="bg-white border-b border-app-border px-6 py-3">
+        <form [formGroup]="filtroForm" (ngSubmit)="buscar()" class="flex flex-wrap gap-3 items-end">
+          <div class="flex flex-col gap-1">
+            <label class="app-label">Desde</label>
+            <input type="date" formControlName="from" class="app-input w-40" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="app-label">Hasta</label>
+            <input type="date" formControlName="to" class="app-input w-40" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="app-label">Buscar</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-app-muted-fg pointer-events-none">
+                <app-icon name="search" [size]="14" />
+              </span>
+              <input type="text" formControlName="q" placeholder="Nombre, cliente…" class="app-input pl-8 w-48" />
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" aria-label="Aplicar filtros">
+            Filtrar
+          </button>
+          <button type="button" class="btn-secondary" (click)="filtroForm.reset(); buscar()" aria-label="Limpiar filtros">
+            Limpiar
+          </button>
+        </form>
+      </div>
+
+      <!-- Loading bar -->
+      @if (store.loading()) {
+        <div class="h-1 w-full bg-app-border" aria-label="Cargando reporte">
+          <div class="h-full bg-primary animate-pulse w-1/2"></div>
+        </div>
+      }
+
+      <!-- Error -->
+      @if (store.error()) {
+        <div role="alert" class="mx-6 mt-4 alert-error">
+          <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+          <span class="flex-1 text-sm">{{ store.error() }}</span>
+          <button type="button" class="btn-icon" aria-label="Cerrar error" (click)="store.limpiarError()">
+            <app-icon name="x" [size]="14" />
+          </button>
+        </div>
+      }
+
+      <!-- Table -->
+      <div class="flex-1 overflow-auto px-6 py-4">
+        @if (store.datos(); as datos) {
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+            <table class="w-full rt lg:min-w-[480px]" [attr.aria-label]="meta.titulo">
+              <thead>
+                <tr class="bg-app-muted border-b border-app-border h-11">
+                  @for (col of meta.columnas; track col.campo) {
+                    <th
+                      class="px-4 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide"
+                      [class.text-right]="col.tipo === 'moneda' || col.tipo === 'numero'"
+                    >
+                      {{ col.header }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of datos.items; track $index) {
+                  <tr class="border-b border-app-border last:border-b-0 h-14 hover:bg-app-muted/40 transition-colors">
+                    @for (col of meta.columnas; track col.campo) {
+                      <td
+                        class="px-4 text-sm"
+                        [attr.data-label]="col.header"
+                        [class.text-right]="col.tipo === 'moneda' || col.tipo === 'numero'"
+                        [class.font-mono]="col.tipo === 'moneda' || col.tipo === 'numero'"
+                      >
+                        @if (col.tipo === 'moneda') {
+                          {{ valorNumerico(row, col.campo) | cop }}
+                        } @else {
+                          {{ valorCelda(row, col.campo, col.tipo) }}
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+            </div>
+
+            <!-- Empty state -->
+            @if (datos.items.length === 0 && !store.loading()) {
+              <div class="flex flex-col items-center justify-center py-16 text-app-muted-fg">
+                <app-icon name="inbox" [size]="40" class="mb-3 opacity-50" />
+                <p class="text-sm">Sin datos para los filtros aplicados.</p>
+              </div>
+            }
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between px-4 py-3 border-t border-app-border">
+              <span class="text-sm text-app-muted-fg">
+                Total: {{ datos.total }} registros
+              </span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="pg-btn-default"
+                  [class.pg-btn-disabled]="currentPage() <= 1"
+                  [disabled]="currentPage() <= 1"
+                  (click)="paginarPrev()"
+                  aria-label="Página anterior"
+                >
+                  <app-icon name="chevron-left" [size]="14" />
+                </button>
+                <span class="pg-btn-active">{{ currentPage() }}</span>
+                <button
+                  type="button"
+                  class="pg-btn-default"
+                  [class.pg-btn-disabled]="currentPage() >= totalPages()"
+                  [disabled]="currentPage() >= totalPages()"
+                  (click)="paginarNext()"
+                  aria-label="Página siguiente"
+                >
+                  <app-icon name="chevron-right" [size]="14" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Totals row if present -->
+          @if (datos.totales) {
+            <div class="mt-3 flex flex-wrap gap-4 text-sm text-app-muted-fg">
+              @for (entry of datos.totales | keyvalue; track entry.key) {
+                <span class="rounded bg-gray-100 px-3 py-1">
+                  <strong class="text-app-fg">{{ entry.key }}:</strong>
+                  {{ entry.value }}
+                </span>
+              }
+            </div>
+          }
+        } @else if (!store.loading()) {
+          <div class="flex flex-col items-center justify-center h-48 text-app-muted-fg">
+            <app-icon name="bar-chart-2" [size]="40" class="mb-3 opacity-50" />
+            <p class="text-sm">Selecciona un tipo de reporte para comenzar.</p>
+          </div>
+        }
+      </div>
+    }
+  </main>
+
+</div>

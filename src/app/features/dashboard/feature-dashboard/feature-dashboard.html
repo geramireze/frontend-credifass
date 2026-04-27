@@ -1,0 +1,227 @@
+<div class="p-4 md:p-8">
+
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    @if (store.rangoFecha()) {
+      <p class="page-sub mt-0.5">
+        {{ store.rangoFecha()!.from }} — {{ store.rangoFecha()!.to }}
+      </p>
+    }
+  </div>
+  <div class="flex items-center gap-2">
+    @for (r of rangos; track r.value) {
+      <button
+        type="button"
+        (click)="onRangoChange(r.value)"
+        [class]="store.rango() === r.value ? 'btn-primary text-xs px-3 h-8' : 'btn-secondary text-xs px-3 h-8'"
+        [attr.aria-pressed]="store.rango() === r.value"
+      >
+        {{ r.label }}
+      </button>
+    }
+    <button
+      type="button"
+      class="btn-icon"
+      (click)="store.cargar()"
+      [disabled]="store.loading()"
+      aria-label="Actualizar dashboard"
+    >
+      <app-icon name="refresh-cw" [size]="16" [class]="store.loading() ? 'spin' : ''" />
+    </button>
+  </div>
+</div>
+
+<!-- Loading -->
+@if (store.loading() && !store.kpis()) {
+  <div class="flex justify-center items-center h-64" aria-live="polite" aria-label="Cargando dashboard">
+    <app-icon name="loader" [size]="40" class="spin text-primary" />
+  </div>
+}
+
+<!-- Error -->
+@if (store.error()) {
+  <div role="alert" class="alert-error mb-6">
+    <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+    <span class="flex-1">{{ store.error() }}</span>
+    <button type="button" class="btn-ghost text-xs px-2 h-7" (click)="store.cargar()">Reintentar</button>
+  </div>
+}
+
+@if (store.kpis(); as kpis) {
+  <!-- KPI Row 1 -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-4 lg:mb-6" role="region" aria-label="Indicadores clave de cartera">
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Total prestado</span>
+        <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+          <app-icon name="banknote" [size]="18" class="text-blue-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-app-fg leading-none">{{ kpis.total_prestado | cop }}</p>
+    </div>
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Total recuperado</span>
+        <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+          <app-icon name="trending-up" [size]="18" class="text-green-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-app-fg leading-none">{{ kpis.total_recuperado | cop }}</p>
+    </div>
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Ganancia intereses</span>
+        <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+          <app-icon name="percent" [size]="18" class="text-green-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-green-600 leading-none">{{ kpis.ganancia_intereses | cop }}</p>
+    </div>
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Utilidad neta</span>
+        <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+          <app-icon name="wallet" [size]="18" class="text-green-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-green-600 leading-none">{{ kpis.utilidad_neta | cop }}</p>
+    </div>
+  </div>
+
+  <!-- KPI Row 2 -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-4 lg:mb-6" role="region" aria-label="Indicadores clave de gestión">
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Préstamos activos</span>
+        <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+          <app-icon name="credit-card" [size]="18" class="text-blue-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-app-fg leading-none">{{ kpis.prestamos_activos }}</p>
+    </div>
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Clientes al día</span>
+        <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+          <app-icon name="check-circle" [size]="18" class="text-green-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-app-fg leading-none">{{ kpis.clientes_al_dia }}</p>
+    </div>
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Clientes en mora</span>
+        <div class="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
+          <app-icon name="alert-triangle" [size]="18" class="text-red-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-red-600 leading-none">{{ kpis.clientes_en_mora }}</p>
+    </div>
+
+    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-app-muted-fg font-medium">Cartera pendiente</span>
+        <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+          <app-icon name="clock" [size]="18" class="text-amber-600" />
+        </div>
+      </div>
+      <p class="text-[22px] font-bold text-amber-600 leading-none">{{ kpis.cartera_pendiente | cop }}</p>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  @if (store.series()) {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Line chart -->
+      <div class="lg:col-span-2 card p-5">
+        <h2 class="text-sm font-semibold text-app-fg mb-4">Evolución de cartera</h2>
+        <div
+          echarts
+          [options]="store.chartLinea()!"
+          class="h-56 w-full"
+          aria-label="Gráfica de líneas: evolución de cartera recuperada y pendiente"
+        ></div>
+      </div>
+
+      <!-- Donut -->
+      <div class="card p-5">
+        <h2 class="text-sm font-semibold text-app-fg mb-4">Estado de préstamos</h2>
+        <div
+          echarts
+          [options]="store.chartDonut()!"
+          class="h-56 w-full"
+          aria-label="Gráfica de donut: distribución de préstamos por estado"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Bar chart -->
+    <div class="card p-5 mb-6">
+      <h2 class="text-sm font-semibold text-app-fg mb-4">Pagos por día de semana</h2>
+      <div
+        echarts
+        [options]="store.chartBarraSemana()!"
+        class="h-48 w-full"
+        aria-label="Gráfica de barras: total de pagos por día de la semana"
+      ></div>
+    </div>
+
+    <!-- Top tables -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="card p-5">
+        <h2 class="text-sm font-semibold text-app-fg mb-4">Top clientes — mayor saldo</h2>
+        <table class="w-full text-sm" aria-label="Clientes con mayor saldo pendiente">
+          <thead>
+            <tr class="data-table-header">
+              <th class="px-3 text-left w-8">#</th>
+              <th class="px-3 text-left">Cliente</th>
+              <th class="px-3 text-right">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of store.series()!.top_saldo; track c.cliente; let i = $index) {
+              <tr class="data-table-row">
+                <td class="px-3 text-app-muted-fg">{{ i + 1 }}</td>
+                <td class="px-3 font-medium text-app-fg">{{ c.cliente }}</td>
+                <td class="px-3 text-right text-app-fg">{{ c.saldo | cop }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card p-5">
+        <h2 class="text-sm font-semibold text-app-fg mb-4">Top clientes — mayor mora</h2>
+        <table class="w-full text-sm" aria-label="Clientes con mayor mora acumulada">
+          <thead>
+            <tr class="data-table-header">
+              <th class="px-3 text-left w-8">#</th>
+              <th class="px-3 text-left">Cliente</th>
+              <th class="px-3 text-right">Mora</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of store.series()!.top_mora; track c.cliente; let i = $index) {
+              <tr class="data-table-row">
+                <td class="px-3 text-app-muted-fg">{{ i + 1 }}</td>
+                <td class="px-3 font-medium text-app-fg">{{ c.cliente }}</td>
+                <td class="px-3 text-right text-red-600 font-medium">{{ c.mora | cop }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+}
+
+</div>
