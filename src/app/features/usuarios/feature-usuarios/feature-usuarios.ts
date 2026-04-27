@@ -38,15 +38,17 @@ export class FeatureUsuarios implements OnInit {
   protected readonly tempPassword = signal<string | null>(null);
   protected readonly guardando = signal(false);
   protected readonly showMenu = signal<string | null>(null);
+  protected readonly mostrarPassword = signal(false);
 
   protected readonly roles = signal<Rol[]>([]);
   protected readonly guardandoRol = signal<string | null>(null);
   protected readonly catalogoPermisos = PERMISOS_CATALOGO;
 
   protected readonly form = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-    email: ['', [Validators.required, Validators.email]],
+    nombre:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    email:    ['', [Validators.required, Validators.email]],
     rolCodigo: ['cobrador' as RolUsuario, Validators.required],
+    password: ['', [Validators.minLength(6)]],
   });
 
   ngOnInit(): void {
@@ -79,16 +81,18 @@ export class FeatureUsuarios implements OnInit {
   }
 
   protected abrirCrear(): void {
-    this.form.reset({ nombre: '', email: '', rolCodigo: 'cobrador' });
+    this.form.reset({ nombre: '', email: '', rolCodigo: 'cobrador', password: '' });
     this.form.get('email')!.enable();
     this.editando.set(null);
+    this.mostrarPassword.set(false);
     this.mostrarPanel.set(true);
   }
 
   protected abrirEditar(u: UsuarioListItem): void {
-    this.form.reset({ nombre: u.nombre, email: u.email, rolCodigo: u.rol });
+    this.form.reset({ nombre: u.nombre, email: u.email, rolCodigo: u.rol, password: '' });
     this.form.get('email')!.disable();
     this.editando.set(u);
+    this.mostrarPassword.set(false);
     this.mostrarPanel.set(true);
     this.showMenu.set(null);
   }
@@ -106,11 +110,20 @@ export class FeatureUsuarios implements OnInit {
       const val = this.form.getRawValue();
       const editar = this.editando();
       if (editar) {
-        const dto: EditarUsuarioDto = { nombre: val.nombre, rolCodigo: val.rolCodigo };
+        const dto: EditarUsuarioDto = {
+          nombre: val.nombre,
+          rolCodigo: val.rolCodigo,
+          ...(val.password ? { password: val.password } : {}),
+        };
         await this.store.editar(editar.id, dto);
         this.cerrarPanel();
       } else {
-        const dto: CrearUsuarioDto = { nombre: val.nombre, email: val.email, rolCodigo: val.rolCodigo };
+        const dto: CrearUsuarioDto = {
+          nombre: val.nombre,
+          email: val.email,
+          rolCodigo: val.rolCodigo,
+          ...(val.password ? { password: val.password } : {}),
+        };
         await this.store.crear(dto);
         const pwd = this.store.passwordTemporal();
         if (pwd) this.tempPassword.set(pwd);

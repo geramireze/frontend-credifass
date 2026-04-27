@@ -39,15 +39,17 @@ export interface CrearUsuarioDto {
   nombre: string;
   email: string;
   rolCodigo: RolUsuario;
+  password?: string;
 }
 
 export interface CrearUsuarioResponse extends UsuarioListItem {
-  password_temporal: string;
+  passwordTemporal: string;
 }
 
 export interface EditarUsuarioDto {
   nombre?: string;
   rolCodigo?: RolUsuario;
+  password?: string;
 }
 
 export interface UsuariosState {

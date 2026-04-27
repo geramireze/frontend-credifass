@@ -31,7 +31,7 @@ export class UsuariosApiService {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/reactivar`, {}));
   }
 
-  resetPassword(id: string): Promise<{ password_temporal: string }> {
-    return firstValueFrom(this.http.post<{ password_temporal: string }>(`${this.base}/${id}/reset-password`, {}));
+  resetPassword(id: string): Promise<{ passwordTemporal: string }> {
+    return firstValueFrom(this.http.post<{ passwordTemporal: string }>(`${this.base}/${id}/reset-password`, {}));
   }
 }

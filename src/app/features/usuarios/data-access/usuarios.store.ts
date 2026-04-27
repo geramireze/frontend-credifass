@@ -29,7 +29,7 @@ export const UsuariosStore = signalStore(
       patchState(store, { loading: true, error: null });
       try {
         const res = await api.crear(dto);
-        patchState(store, { passwordTemporal: res.password_temporal, loading: false });
+        patchState(store, { passwordTemporal: res.passwordTemporal, loading: false });
         await this.cargar();
       } catch {
         patchState(store, { error: 'No se pudo crear el usuario.', loading: false });
@@ -64,8 +64,8 @@ export const UsuariosStore = signalStore(
 
     async resetPassword(id: string): Promise<string> {
       const res = await api.resetPassword(id);
-      patchState(store, { passwordTemporal: res.password_temporal });
-      return res.password_temporal;
+      patchState(store, { passwordTemporal: res.passwordTemporal });
+      return res.passwordTemporal;
     },
 
     limpiarPasswordTemporal(): void {
