@@ -13,8 +13,8 @@ import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
 import { SimulacionRequest, FrecuenciaPago } from '../data-access/prestamos.model';
 
-// Tasa fija del sistema: 20% total sobre 6 semanas → 3.333% por semana
-const TASA_SEMANAL_FIJA = 0.20 / 6;
+// Tasa fija del sistema: 20% sobre el capital, se aplica una sola vez
+const TASA_SEMANAL_FIJA = 0.20;
 const SEMANAS_FIJAS = 6;
 
 @Component({
