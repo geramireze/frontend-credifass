@@ -8,7 +8,8 @@ import {
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
 import { UsuariosStore } from '../data-access/usuarios.store';
-import { UsuarioListItem, CrearUsuarioDto, EditarUsuarioDto, RolUsuario } from '../data-access/usuarios.model';
+import { RolesApiService } from '../data-access/roles-api';
+import { UsuarioListItem, CrearUsuarioDto, EditarUsuarioDto, RolUsuario, Rol, PERMISOS_CATALOGO } from '../data-access/usuarios.model';
 
 const ROL_LABELS: Record<RolUsuario, string> = {
   admin: 'Admin',
@@ -28,13 +29,19 @@ const ROL_LABELS: Record<RolUsuario, string> = {
 })
 export class FeatureUsuarios implements OnInit {
   protected readonly store = inject(UsuariosStore);
+  private readonly rolesApi = inject(RolesApiService);
   private readonly fb = inject(FormBuilder);
 
+  protected readonly tabActivo = signal<'usuarios' | 'roles'>('usuarios');
   protected readonly mostrarPanel = signal(false);
   protected readonly editando = signal<UsuarioListItem | null>(null);
   protected readonly tempPassword = signal<string | null>(null);
   protected readonly guardando = signal(false);
   protected readonly showMenu = signal<string | null>(null);
+
+  protected readonly roles = signal<Rol[]>([]);
+  protected readonly guardandoRol = signal<string | null>(null);
+  protected readonly catalogoPermisos = PERMISOS_CATALOGO;
 
   protected readonly form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -44,6 +51,31 @@ export class FeatureUsuarios implements OnInit {
 
   ngOnInit(): void {
     this.store.cargar();
+    this.rolesApi.listar().then(r => this.roles.set(r)).catch(() => undefined);
+  }
+
+  protected cambiarTab(tab: 'usuarios' | 'roles'): void {
+    this.tabActivo.set(tab);
+  }
+
+  protected tienePermiso(rol: Rol, key: string): boolean {
+    return rol.permissions['*'] === true || rol.permissions[key] === true;
+  }
+
+  protected esAdminTotal(rol: Rol): boolean {
+    return rol.permissions['*'] === true;
+  }
+
+  protected async togglePermiso(rol: Rol, key: string): Promise<void> {
+    if (this.guardandoRol() || this.esAdminTotal(rol)) return;
+    this.guardandoRol.set(rol.id);
+    try {
+      const nuevos = { ...rol.permissions, [key]: !rol.permissions[key] };
+      const actualizado = await this.rolesApi.actualizarPermisos(rol.id, nuevos);
+      this.roles.update(list => list.map(r => r.id === actualizado.id ? actualizado : r));
+    } finally {
+      this.guardandoRol.set(null);
+    }
   }
 
   protected abrirCrear(): void {

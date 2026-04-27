@@ -12,6 +12,7 @@ import { ClienteListItem } from '../../clientes/data-access/clientes.model';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
 import { SimulacionRequest, FrecuenciaPago } from '../data-access/prestamos.model';
+import { AuthStore } from '../../auth/data-access/auth.store';
 
 // Tasa fija del sistema: 20% sobre el capital, se aplica una sola vez
 const TASA_SEMANAL_FIJA = 0.20;
@@ -26,7 +27,17 @@ const SEMANAS_FIJAS = 6;
 })
 export class FeaturePrestamoForm implements OnInit, OnDestroy {
   protected readonly store = inject(PrestamosStore);
+  private readonly authStore = inject(AuthStore);
   private readonly clientesApi = inject(ClientesApiService);
+
+  protected readonly puedeFechaPasada = computed(() => {
+    const p = this.authStore.usuario()?.permisos ?? {};
+    return p['*'] === true || p['prestamos.fecha_pasada'] === true;
+  });
+
+  protected readonly fechaMinima = computed(() =>
+    this.puedeFechaPasada() ? '' : new Date().toISOString().split('T')[0]
+  );
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);

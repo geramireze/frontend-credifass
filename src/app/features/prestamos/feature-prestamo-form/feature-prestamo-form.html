@@ -88,6 +88,7 @@
             <label class="app-label" for="fecha_inicio">Fecha de inicio *</label>
             <input id="fecha_inicio" type="date" formControlName="fecha_inicio" class="app-input"
                    [class.border-status-error]="campo('fecha_inicio')"
+                   [min]="fechaMinima()"
                    [max]="maxFecha" />
             @if (campo('fecha_inicio')) {
               <p class="text-xs text-status-error-fg mt-1">La fecha es requerida</p>
