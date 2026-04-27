@@ -222,7 +222,7 @@
                 class="flex flex-col gap-5 p-6 flex-1">
 
             <div class="rounded-lg bg-primary-light/30 border border-primary/20 px-4 py-3">
-              <p class="text-xs text-primary font-medium">Solo se pueden modificar el cobrador, la mora y las observaciones. Para cambiar montos usa <strong>Refinanciar</strong>.</p>
+              <p class="text-xs text-primary font-medium">Puedes ajustar la fecha de inicio, el cobrador, la mora y las observaciones. Para cambiar montos usa <strong>Refinanciar</strong>.</p>
             </div>
 
             @if (errorEdicion()) {
@@ -231,6 +231,21 @@
                 <span class="text-sm">{{ errorEdicion() }}</span>
               </div>
             }
+
+            <!-- Fecha de inicio -->
+            <div class="flex flex-col gap-1">
+              <label for="edit-fecha" class="app-label">
+                Fecha de inicio
+                @if (!puedeFechaPasada()) {
+                  <span class="text-app-muted-fg">(no puede ser anterior a hoy)</span>
+                }
+              </label>
+              <input id="edit-fecha" type="date" formControlName="fecha_inicio"
+                     class="app-input"
+                     [min]="fechaMinima()"
+                     [max]="maxFecha" />
+              <p class="text-xs text-app-muted-fg">Recalcula las fechas de todas las cuotas.</p>
+            </div>
 
             <!-- Cobrador -->
             <div class="flex flex-col gap-1">

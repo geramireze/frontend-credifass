@@ -31,8 +31,10 @@ export class FeaturePrestamoForm implements OnInit, OnDestroy {
   private readonly clientesApi = inject(ClientesApiService);
 
   protected readonly puedeFechaPasada = computed(() => {
-    const p = this.authStore.usuario()?.permisos ?? {};
-    return p['*'] === true || p['prestamos.fecha_pasada'] === true;
+    const u = this.authStore.usuario();
+    if (!u) return false;
+    const p = u.permisos ?? {};
+    return u.rol === 'admin' || p['*'] === true || p['prestamos.fecha_pasada'] === true;
   });
 
   protected readonly fechaMinima = computed(() =>

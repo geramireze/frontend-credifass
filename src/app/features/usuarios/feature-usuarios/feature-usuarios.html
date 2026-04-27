@@ -12,6 +12,12 @@
         Nuevo usuario
       </button>
     }
+    @if (tabActivo() === 'roles') {
+      <button type="button" class="btn-primary flex items-center gap-2" (click)="abrirPanelRol()" aria-label="Crear nuevo rol">
+        <app-icon name="plus" [size]="16" />
+        Nuevo rol
+      </button>
+    }
   </div>
 
   <!-- Tabs -->
@@ -182,6 +188,16 @@
 
     <div class="flex flex-col gap-6">
 
+      @if (errorRol()) {
+        <div role="alert" class="alert-error">
+          <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+          <span class="flex-1 text-sm">{{ errorRol() }}</span>
+          <button type="button" class="btn-icon" aria-label="Cerrar error" (click)="errorRol.set(null)">
+            <app-icon name="x" [size]="14" />
+          </button>
+        </div>
+      }
+
       @for (rol of roles(); track rol.id) {
         <div class="card p-0 overflow-hidden">
 
@@ -194,6 +210,16 @@
             </div>
             @if (esAdminTotal(rol)) {
               <span class="badge badge-primary text-xs">Acceso total</span>
+            }
+            @if (!esRolSistema(rol)) {
+              <button
+                type="button"
+                class="btn-icon text-status-error-fg hover:bg-status-error-light"
+                aria-label="Eliminar rol"
+                [disabled]="guardandoRol() !== null"
+                (click)="eliminarRol(rol)">
+                <app-icon name="trash" [size]="15" />
+              </button>
             }
           </div>
 
@@ -246,6 +272,81 @@
         </div>
       }
 
+    </div>
+  }
+
+  <!-- ── Side panel: Crear rol ──────────────────────── -->
+  @if (mostrarPanelRol()) {
+    <div class="fixed inset-0 z-40 flex" role="dialog" aria-label="Crear nuevo rol">
+      <div class="flex-1 bg-black/40" (click)="cerrarPanelRol()" aria-hidden="true"></div>
+      <aside class="w-full max-w-sm bg-white shadow-xl flex flex-col h-full overflow-y-auto">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-app-border">
+          <h2 class="text-lg font-semibold text-app-fg">Nuevo rol</h2>
+          <button type="button" class="btn-icon" aria-label="Cerrar panel" (click)="cerrarPanelRol()">
+            <app-icon name="x" [size]="16" class="text-app-muted-fg" />
+          </button>
+        </div>
+
+        <form [formGroup]="formRol" (ngSubmit)="crearRol()" class="flex flex-col gap-5 p-6 flex-1">
+
+          <div class="rounded-lg bg-primary-light/30 border border-primary/20 px-4 py-3">
+            <p class="text-xs text-primary">Define un rol personalizado con permisos específicos. Los roles del sistema (admin, supervisor, cobrador) no pueden eliminarse.</p>
+          </div>
+
+          @if (errorRol()) {
+            <div role="alert" class="alert-error">
+              <app-icon name="alert-circle" [size]="14" class="shrink-0" />
+              <span class="text-sm">{{ errorRol() }}</span>
+            </div>
+          }
+
+          <!-- Nombre -->
+          <div class="flex flex-col gap-1">
+            <label for="rol-nombre" class="app-label">Nombre</label>
+            <input id="rol-nombre" type="text" formControlName="nombre"
+              placeholder="Ej. Supervisor de zona" class="app-input w-full" />
+            @if (formRol.get('nombre')?.hasError('required') && formRol.get('nombre')?.touched) {
+              <p class="text-xs text-status-error-fg">El nombre es obligatorio.</p>
+            }
+            @if (formRol.get('nombre')?.hasError('minlength') && formRol.get('nombre')?.touched) {
+              <p class="text-xs text-status-error-fg">Mínimo 2 caracteres.</p>
+            }
+          </div>
+
+          <!-- Código -->
+          <div class="flex flex-col gap-1">
+            <label for="rol-codigo" class="app-label">
+              Código <span class="text-app-muted-fg">(minúsculas, sin espacios)</span>
+            </label>
+            <input id="rol-codigo" type="text" formControlName="codigo"
+              placeholder="Ej. supervisor_zona" class="app-input w-full font-mono" />
+            @if (formRol.get('codigo')?.hasError('required') && formRol.get('codigo')?.touched) {
+              <p class="text-xs text-status-error-fg">El código es obligatorio.</p>
+            }
+            @if (formRol.get('codigo')?.hasError('pattern') && formRol.get('codigo')?.touched) {
+              <p class="text-xs text-status-error-fg">Solo letras minúsculas, números y guión bajo.</p>
+            }
+            @if (formRol.get('codigo')?.hasError('minlength') && formRol.get('codigo')?.touched) {
+              <p class="text-xs text-status-error-fg">Mínimo 2 caracteres.</p>
+            }
+          </div>
+
+          <div class="flex gap-3 mt-auto pt-4">
+            <button type="button" class="btn-secondary flex-1" (click)="cerrarPanelRol()">Cancelar</button>
+            <button type="submit" class="btn-primary flex-1 flex items-center justify-center gap-2"
+              [disabled]="formRol.invalid || guardandoNuevoRol()">
+              @if (guardandoNuevoRol()) {
+                <app-icon name="loader" [size]="14" class="spin" />
+                Guardando…
+              } @else {
+                Crear rol
+              }
+            </button>
+          </div>
+
+        </form>
+      </aside>
     </div>
   }
 

@@ -56,13 +56,30 @@ export class FeaturePrestamoDetalle implements OnInit {
   protected readonly errorEdicion = signal<string | null>(null);
 
   protected readonly puedeEditar = computed(() => {
-    const p = this.authStore.usuario()?.permisos ?? {};
-    return p['*'] === true || p['prestamos.edit'] === true;
+    const u = this.authStore.usuario();
+    if (!u) return false;
+    const p = u.permisos ?? {};
+    return u.rol === 'admin' || p['*'] === true || p['prestamos.edit'] === true;
   });
 
+  protected readonly puedeFechaPasada = computed(() => {
+    const u = this.authStore.usuario();
+    if (!u) return false;
+    const p = u.permisos ?? {};
+    return u.rol === 'admin' || p['*'] === true || p['prestamos.fecha_pasada'] === true;
+  });
+
+  protected readonly hoy = new Date().toISOString().split('T')[0];
+  protected readonly maxFecha = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  protected readonly fechaMinima = computed(() =>
+    this.puedeFechaPasada() ? '' : this.hoy,
+  );
+
   protected readonly formEditar = this.fb.group({
-    cobrador_id:  [''],
-    mora_activa:  [false],
+    fecha_inicio:  [''],
+    cobrador_id:   [''],
+    mora_activa:   [false],
     observaciones: [''],
   });
 
@@ -88,6 +105,7 @@ export class FeaturePrestamoDetalle implements OnInit {
 
   protected abrirEditar(p: PrestamoListItem): void {
     this.formEditar.reset({
+      fecha_inicio:  p.fecha_inicio.split('T')[0],
       cobrador_id:   p.cobrador_id ?? '',
       mora_activa:   false,
       observaciones: '',
@@ -106,7 +124,10 @@ export class FeaturePrestamoDetalle implements OnInit {
     this.guardandoEdicion.set(true);
     this.errorEdicion.set(null);
     const v = this.formEditar.getRawValue();
-    const dto: { cobradorId?: string; moraActiva?: boolean; observaciones?: string } = {};
+    const original = this.store.seleccionado();
+    const dto: { fechaInicio?: string; cobradorId?: string; moraActiva?: boolean; observaciones?: string } = {};
+    const nuevaFecha = v.fecha_inicio?.trim();
+    if (nuevaFecha && nuevaFecha !== original?.fecha_inicio?.split('T')[0]) dto.fechaInicio = nuevaFecha;
     if (v.cobrador_id !== null) dto.cobradorId = v.cobrador_id || undefined;
     if (v.mora_activa !== null) dto.moraActiva = v.mora_activa ?? undefined;
     if (v.observaciones) dto.observaciones = v.observaciones;

@@ -7,6 +7,12 @@ export interface Rol {
   permissions: Record<string, boolean>;
 }
 
+export interface CrearRolDto {
+  codigo: string;
+  nombre: string;
+  permissions?: Record<string, boolean>;
+}
+
 export interface PermisoCatalogo {
   key: string;
   label: string;
