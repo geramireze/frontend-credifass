@@ -59,9 +59,9 @@ export const PrestamosStore = signalStore(
         const prestamo = await api.crear(dto);
         await this.cargarLista();
         return prestamo.id;
-      } catch {
-        patchState(store, { error: 'No se pudo crear el préstamo.', loading: false });
-        throw new Error('Error al crear préstamo');
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
       }
     },
 

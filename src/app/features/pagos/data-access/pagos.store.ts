@@ -28,8 +28,10 @@ export const PagosStore = signalStore(
       try {
         const ruta = await api.rutaHoy();
         patchState(store, { ruta, loading: false });
-      } catch {
-        patchState(store, { error: 'No se pudo cargar la ruta de hoy.', loading: false });
+      } catch (err: unknown) {
+        const body = (err as { error?: { message?: string | string[] } })?.error;
+        const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
+        patchState(store, { error: msg ?? 'No se pudo cargar la ruta de hoy.', loading: false });
       }
     },
 
@@ -48,8 +50,10 @@ export const PagosStore = signalStore(
         patchState(store, { pagoExitoso: true, cuotaSeleccionada: null, loading: false });
         const ruta = await api.rutaHoy();
         patchState(store, { ruta });
-      } catch {
-        patchState(store, { error: 'No se pudo registrar el pago. Intenta de nuevo.', loading: false });
+      } catch (err: unknown) {
+        const body = (err as { error?: { message?: string | string[] } })?.error;
+        const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
+        patchState(store, { error: msg ?? 'No se pudo registrar el pago. Intenta de nuevo.', loading: false });
       }
     },
 

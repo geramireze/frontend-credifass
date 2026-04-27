@@ -48,9 +48,9 @@ export const ClientesStore = signalStore(
       try {
         await api.crear(dto);
         await this.cargarLista();
-      } catch {
-        patchState(store, { error: 'No se pudo crear el cliente.', loading: false });
-        throw new Error('Error al crear cliente');
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
       }
     },
 
@@ -60,9 +60,9 @@ export const ClientesStore = signalStore(
         const actualizado = await api.actualizar(id, dto);
         patchState(store, { seleccionado: actualizado, loading: false });
         await this.cargarLista();
-      } catch {
-        patchState(store, { error: 'No se pudo actualizar el cliente.', loading: false });
-        throw new Error('Error al actualizar cliente');
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
       }
     },
 

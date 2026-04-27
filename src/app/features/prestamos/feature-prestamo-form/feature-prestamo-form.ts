@@ -132,8 +132,10 @@ export class FeaturePrestamoForm implements OnInit, OnDestroy {
     try {
       const id = await this.store.crear(dto);
       await this.router.navigate(['/prestamos', id]);
-    } catch {
-      this.error.set('No se pudo crear el préstamo. Verifica los datos e intenta de nuevo.');
+    } catch (err: unknown) {
+      const body = (err as { error?: { message?: string | string[] } })?.error;
+      const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
+      this.error.set(msg ?? 'No se pudo crear el préstamo. Verifica los datos e intenta de nuevo.');
       this.loading.set(false);
     }
   }

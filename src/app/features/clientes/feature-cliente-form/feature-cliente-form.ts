@@ -98,8 +98,10 @@ export class FeatureClienteForm implements OnInit {
         await this.store.crear(dto);
         await this.router.navigate(['/clientes']);
       }
-    } catch {
-      this.error.set('No se pudo guardar el cliente. Verifica los datos e intenta de nuevo.');
+    } catch (err: unknown) {
+      const body = (err as { error?: { message?: string | string[] } })?.error;
+      const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
+      this.error.set(msg ?? 'No se pudo guardar el cliente. Verifica los datos e intenta de nuevo.');
       this.loading.set(false);
     }
   }
