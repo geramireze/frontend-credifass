@@ -16,6 +16,7 @@ export interface PermisoCatalogo {
 export const PERMISOS_CATALOGO: PermisoCatalogo[] = [
   { key: 'prestamos.fecha_pasada', label: 'Fechas pasadas',    descripcion: 'Registrar préstamos con fecha de inicio en el pasado' },
   { key: 'prestamos.create',       label: 'Crear préstamos',   descripcion: 'Crear nuevos préstamos para clientes' },
+  { key: 'prestamos.edit',         label: 'Editar préstamos',  descripcion: 'Modificar cobrador, mora y observaciones de un préstamo activo' },
   { key: 'prestamos.cancel',       label: 'Cancelar préstamos', descripcion: 'Cancelar préstamos activos' },
   { key: 'pagos.create',           label: 'Registrar pagos',   descripcion: 'Registrar pagos de cuotas' },
   { key: 'pagos.void',             label: 'Anular pagos',      descripcion: 'Anular pagos ya registrados' },

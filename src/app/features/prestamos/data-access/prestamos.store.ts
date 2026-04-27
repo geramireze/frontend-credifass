@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { PrestamosApiService } from './prestamos-api';
-import { PrestamosState, PrestamosFiltros, CrearPrestamoDto, SimulacionRequest } from './prestamos.model';
+import { PrestamosState, PrestamosFiltros, CrearPrestamoDto, EditarPrestamoDto, SimulacionRequest } from './prestamos.model';
 
 const estadoInicial: PrestamosState = {
   items: [],
@@ -59,6 +59,17 @@ export const PrestamosStore = signalStore(
         const prestamo = await api.crear(dto);
         await this.cargarLista();
         return prestamo.id;
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
+      }
+    },
+
+    async editar(id: string, dto: EditarPrestamoDto): Promise<void> {
+      patchState(store, { loading: true, error: null });
+      try {
+        const actualizado = await api.editar(id, dto);
+        patchState(store, { seleccionado: actualizado, loading: false });
       } catch (err: unknown) {
         patchState(store, { loading: false });
         throw err;

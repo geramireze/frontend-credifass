@@ -4,7 +4,7 @@ import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   PrestamosListResponse, PrestamoListItem, CuotaPrestamo,
-  SimulacionRequest, SimulacionResponse, CrearPrestamoDto, PrestamosFiltros,
+  SimulacionRequest, SimulacionResponse, CrearPrestamoDto, EditarPrestamoDto, PrestamosFiltros,
 } from './prestamos.model';
 
 type RawPrestamo = Record<string, unknown> & {
@@ -83,6 +83,12 @@ export class PrestamosApiService {
   cuotas(id: string): Promise<CuotaPrestamo[]> {
     return firstValueFrom(
       this.http.get<Record<string, unknown>[]>(`${this.base}/${id}/cuotas`).pipe(map(res => res.map(mapCuota))),
+    );
+  }
+
+  editar(id: string, dto: EditarPrestamoDto): Promise<PrestamoListItem> {
+    return firstValueFrom(
+      this.http.patch<RawPrestamo>(`${this.base}/${id}`, dto).pipe(map(mapPrestamo)),
     );
   }
 

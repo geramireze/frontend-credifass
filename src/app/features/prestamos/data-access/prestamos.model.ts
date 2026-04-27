@@ -61,6 +61,12 @@ export interface CrearPrestamoDto {
   observaciones?: string;
 }
 
+export interface EditarPrestamoDto {
+  cobradorId?: string;
+  moraActiva?: boolean;
+  observaciones?: string;
+}
+
 export interface PrestamosListResponse {
   total: number;
   page?: number;

@@ -40,6 +40,15 @@
         </div>
         <div class="flex gap-2 flex-wrap">
           @if (p.estado !== 'cancelado' && p.estado !== 'pagado') {
+            @if (puedeEditar()) {
+              <button type="button"
+                      aria-label="Editar préstamo"
+                      (click)="abrirEditar(p)"
+                      class="flex items-center gap-1.5 h-9 px-3.5 rounded text-sm font-medium border border-app-border text-app-fg hover:bg-app-muted transition-colors">
+                <app-icon name="edit" [size]="14" />
+                Editar
+              </button>
+            }
             <button type="button"
                     aria-label="Cancelar préstamo"
                     (click)="confirmarCancelar(p.id)"
@@ -48,7 +57,8 @@
               <app-icon name="x" [size]="14" />
               Cancelar
             </button>
-          }</div>
+          }
+        </div>
       </div>
 
       <!-- Progress bar -->
@@ -192,6 +202,79 @@
       <div class="card mt-4 p-8 text-center">
         <app-icon name="shield-check" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
         <p class="text-sm text-app-muted-fg">Historial de auditoría disponible en la sección Auditoría</p>
+      </div>
+    }
+
+    <!-- ── Side panel: Editar préstamo ────────────────────── -->
+    @if (mostrarPanelEditar()) {
+      <div class="fixed inset-0 z-40 flex" role="dialog" aria-label="Editar préstamo">
+        <div class="flex-1 bg-black/40" (click)="cerrarEditar()" aria-hidden="true"></div>
+        <aside class="w-full max-w-sm bg-white shadow-xl flex flex-col h-full overflow-y-auto">
+
+          <div class="flex items-center justify-between px-6 py-4 border-b border-app-border">
+            <h2 class="text-lg font-semibold text-app-fg">Editar préstamo</h2>
+            <button type="button" class="btn-icon" aria-label="Cerrar panel" (click)="cerrarEditar()">
+              <app-icon name="x" [size]="16" class="text-app-muted-fg" />
+            </button>
+          </div>
+
+          <form [formGroup]="formEditar" (ngSubmit)="guardarEdicion(p.id)"
+                class="flex flex-col gap-5 p-6 flex-1">
+
+            <div class="rounded-lg bg-primary-light/30 border border-primary/20 px-4 py-3">
+              <p class="text-xs text-primary font-medium">Solo se pueden modificar el cobrador, la mora y las observaciones. Para cambiar montos usa <strong>Refinanciar</strong>.</p>
+            </div>
+
+            @if (errorEdicion()) {
+              <div role="alert" class="alert-error">
+                <app-icon name="alert-circle" [size]="14" class="shrink-0" />
+                <span class="text-sm">{{ errorEdicion() }}</span>
+              </div>
+            }
+
+            <!-- Cobrador -->
+            <div class="flex flex-col gap-1">
+              <label for="edit-cobrador" class="app-label">ID del cobrador <span class="text-app-muted-fg">(opcional)</span></label>
+              <input id="edit-cobrador" type="text" formControlName="cobrador_id"
+                     class="app-input" placeholder="UUID del cobrador…" />
+              <p class="text-xs text-app-muted-fg">Actual: {{ p.cobrador_nombre ?? 'Sin cobrador' }}</p>
+            </div>
+
+            <!-- Mora activa -->
+            <div class="pt-1 border-t border-app-border">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" formControlName="mora_activa"
+                       class="w-4 h-4 rounded border-app-border accent-primary" />
+                <div>
+                  <span class="text-sm text-app-fg font-medium">Activar mora</span>
+                  <p class="text-xs text-app-muted-fg">Aplica cargo por días de atraso</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="flex flex-col gap-1">
+              <label for="edit-obs" class="app-label">Observaciones <span class="text-app-muted-fg">(opcional)</span></label>
+              <textarea id="edit-obs" formControlName="observaciones" rows="3"
+                        class="app-input h-auto resize-none py-2"
+                        placeholder="Agrega o actualiza las observaciones…"></textarea>
+            </div>
+
+            <div class="flex gap-3 mt-auto pt-4">
+              <button type="button" class="btn-secondary flex-1" (click)="cerrarEditar()">Cancelar</button>
+              <button type="submit" class="btn-primary flex-1 flex items-center justify-center gap-2"
+                      [disabled]="guardandoEdicion()">
+                @if (guardandoEdicion()) {
+                  <app-icon name="loader" [size]="14" class="spin" />
+                  Guardando…
+                } @else {
+                  Guardar cambios
+                }
+              </button>
+            </div>
+
+          </form>
+        </aside>
       </div>
     }
   }
