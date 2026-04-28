@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PrestamosStore } from '../data-access/prestamos.store';
+import { PrestamosApiService } from '../data-access/prestamos-api';
 import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
@@ -48,6 +49,7 @@ const CUOTA_LABELS: Record<CuotaPrestamo['estado'], string> = {
 export class FeaturePrestamoDetalle implements OnInit {
   protected readonly store = inject(PrestamosStore);
   private readonly authStore = inject(AuthStore);
+  private readonly api = inject(PrestamosApiService);
   private readonly usuariosApi = inject(UsuariosApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -59,6 +61,7 @@ export class FeaturePrestamoDetalle implements OnInit {
   protected readonly mostrarPanelEditar = signal(false);
   protected readonly guardandoEdicion = signal(false);
   protected readonly errorEdicion = signal<string | null>(null);
+  protected readonly previewEdicion = signal<{ primera: string; ultima: string } | null>(null);
 
   protected readonly puedeEditar = computed(() => {
     const u = this.authStore.usuario();
@@ -112,14 +115,46 @@ export class FeaturePrestamoDetalle implements OnInit {
   }
 
   protected abrirEditar(p: PrestamoListItem): void {
+    const fechaActual = p.fecha_inicio.split('T')[0];
     this.formEditar.reset({
-      fecha_inicio:  p.fecha_inicio.split('T')[0],
+      fecha_inicio:  fechaActual,
       cobrador_id:   p.cobrador_id ?? '',
       mora_activa:   false,
       observaciones: '',
     });
+    this.previewEdicion.set(null);
     this.errorEdicion.set(null);
     this.mostrarPanelEditar.set(true);
+    this.actualizarPreviewFechas(fechaActual, p);
+  }
+
+  private async actualizarPreviewFechas(fecha: string, p: PrestamoListItem): Promise<void> {
+    if (!fecha) return;
+    try {
+      const sim = await this.api.simular({
+        montoPrestado:  p.monto_prestado,
+        tasaSemanal:    0,
+        numeroSemanas:  p.numero_semanas,
+        modoInteres:    'simple',
+        fechaInicio:    fecha,
+        frecuenciaPago: p.frecuencia_pago,
+      });
+      const cron = sim.cronograma;
+      if (cron?.length) {
+        this.previewEdicion.set({
+          primera: this.formatFecha(cron[0].fechaEsperada),
+          ultima:  this.formatFecha(cron[cron.length - 1].fechaEsperada),
+        });
+      }
+    } catch {
+      this.previewEdicion.set(null);
+    }
+  }
+
+  protected onFechaInicioChange(event: Event): void {
+    const fecha = (event.target as HTMLInputElement).value;
+    const p = this.store.seleccionado();
+    if (p) this.actualizarPreviewFechas(fecha, p);
   }
 
   protected cerrarEditar(): void {

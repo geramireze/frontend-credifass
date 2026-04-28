@@ -68,8 +68,9 @@ export const PrestamosStore = signalStore(
     async editar(id: string, dto: EditarPrestamoDto): Promise<void> {
       patchState(store, { loading: true, error: null });
       try {
-        const actualizado = await api.editar(id, dto);
-        patchState(store, { seleccionado: actualizado, loading: false });
+        await api.editar(id, dto);
+        const [prestamo, cuotas] = await Promise.all([api.obtener(id), api.cuotas(id)]);
+        patchState(store, { seleccionado: prestamo, cuotas, loading: false });
       } catch (err: unknown) {
         patchState(store, { loading: false });
         throw err;
