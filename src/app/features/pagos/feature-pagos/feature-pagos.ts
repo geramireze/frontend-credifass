@@ -72,12 +72,15 @@ export class FeaturePagos implements OnInit {
 
   protected async registrarPago(): Promise<void> {
     const cuota = this.store.cuotaSeleccionada();
-    if (!cuota || this.pagoForm.invalid) return;
+    if (!cuota) return;
+    if (this.pagoForm.invalid) {
+      this.pagoForm.markAllAsTouched();
+      return;
+    }
 
     await this.store.registrarPago({
       prestamo_id: cuota.prestamo_id,
       monto: this.pagoForm.getRawValue().monto,
-      fecha: new Date().toISOString().split('T')[0],
       nota: this.pagoForm.getRawValue().notas || undefined,
       idempotency_key: crypto.randomUUID(),
     });

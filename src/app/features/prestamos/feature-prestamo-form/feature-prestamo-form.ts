@@ -9,6 +9,8 @@ import { Subject, debounceTime, startWith, takeUntil } from 'rxjs';
 import { PrestamosStore } from '../data-access/prestamos.store';
 import { ClientesApiService } from '../../clientes/data-access/clientes-api';
 import { ClienteListItem } from '../../clientes/data-access/clientes.model';
+import { UsuariosApiService } from '../../usuarios/data-access/usuarios-api';
+import { UsuarioListItem } from '../../usuarios/data-access/usuarios.model';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
 import { SimulacionRequest, FrecuenciaPago } from '../data-access/prestamos.model';
@@ -29,6 +31,7 @@ export class FeaturePrestamoForm implements OnInit, OnDestroy {
   protected readonly store = inject(PrestamosStore);
   private readonly authStore = inject(AuthStore);
   private readonly clientesApi = inject(ClientesApiService);
+  private readonly usuariosApi = inject(UsuariosApiService);
 
   protected readonly puedeFechaPasada = computed(() => {
     const u = this.authStore.usuario();
@@ -47,7 +50,8 @@ export class FeaturePrestamoForm implements OnInit, OnDestroy {
 
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly clientes = signal<ClienteListItem[]>([]);
+  protected readonly clientes   = signal<ClienteListItem[]>([]);
+  protected readonly cobradores = signal<UsuarioListItem[]>([]);
 
   protected readonly hoy = new Date().toISOString().split('T')[0];
   protected readonly maxFecha = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -83,6 +87,10 @@ export class FeaturePrestamoForm implements OnInit, OnDestroy {
 
     this.clientesApi.listar({ pageSize: 100 })
       .then((res) => this.clientes.set(res.items))
+      .catch(() => {/* non-critical */});
+
+    this.usuariosApi.listar()
+      .then((res) => this.cobradores.set(res.items.filter((u) => u.rol === 'cobrador' && u.activo)))
       .catch(() => {/* non-critical */});
 
     const simFields = ['monto_prestado', 'fecha_inicio', 'frecuencia_pago'];

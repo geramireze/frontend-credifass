@@ -160,8 +160,12 @@
                             class="flex flex-wrap items-end gap-3">
                         <div class="flex flex-col gap-1 min-w-[140px]">
                           <label class="app-label">Monto del pago</label>
-                          <input type="number" formControlName="monto" min="1" class="app-input h-9"
+                          <input type="number" formControlName="monto" min="1"
+                                 [class]="pagoForm.get('monto')?.invalid && pagoForm.get('monto')?.touched ? 'app-input h-9 border-red-500' : 'app-input h-9'"
                                  aria-required="true" />
+                          @if (pagoForm.get('monto')?.invalid && pagoForm.get('monto')?.touched) {
+                            <span class="text-xs text-red-600">El monto debe ser mayor a cero</span>
+                          }
                         </div>
                         <div class="flex flex-col gap-1 flex-1 min-w-[160px]">
                           <label class="app-label">Notas (opcional)</label>
@@ -269,8 +273,12 @@
                               class="flex flex-wrap items-end gap-3">
                           <div class="flex flex-col gap-1 min-w-[140px]">
                             <label class="app-label">Monto del pago</label>
-                            <input type="number" formControlName="monto" min="1" class="app-input h-9"
+                            <input type="number" formControlName="monto" min="1"
+                                   [class]="pagoForm.get('monto')?.invalid && pagoForm.get('monto')?.touched ? 'app-input h-9 border-red-500' : 'app-input h-9'"
                                    aria-required="true" />
+                            @if (pagoForm.get('monto')?.invalid && pagoForm.get('monto')?.touched) {
+                              <span class="text-xs text-red-600">El monto debe ser mayor a cero</span>
+                            }
                           </div>
                           <div class="flex flex-col gap-1 flex-1 min-w-[160px]">
                             <label class="app-label">Notas (opcional)</label>

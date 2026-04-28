@@ -68,8 +68,12 @@
           <!-- Cobrador -->
           <div>
             <label class="app-label" for="cobrador_id">Cobrador <span class="text-app-muted-fg">(opcional)</span></label>
-            <input id="cobrador_id" type="text" formControlName="cobrador_id" class="app-input"
-                   placeholder="ID del cobrador…" />
+            <select id="cobrador_id" formControlName="cobrador_id" class="app-select">
+              <option value="">Sin cobrador asignado</option>
+              @for (c of cobradores(); track c.id) {
+                <option [value]="c.id">{{ c.nombre }}</option>
+              }
+            </select>
           </div>
 
           <!-- Monto -->

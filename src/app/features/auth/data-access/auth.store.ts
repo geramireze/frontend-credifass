@@ -19,6 +19,11 @@ function resolverStorage(recordarme: boolean): Storage {
   return recordarme ? localStorage : sessionStorage;
 }
 
+export function limpiarSesionStorage(): void {
+  sessionStorage.clear();
+  ['auth_user', 'access_token', 'refresh_token'].forEach((k) => localStorage.removeItem(k));
+}
+
 const estadoInicial: AuthState = {
   usuario: cargarUsuarioInicial(),
   loading: false,
@@ -50,14 +55,18 @@ export const AuthStore = signalStore(
       }
     },
 
-    async logout(): Promise<void> {
-      await api.logout().catch(() => undefined);
-      sessionStorage.clear();
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+    cerrarSesionLocal(): void {
+      limpiarSesionStorage();
       patchState(store, { usuario: null, error: null });
-      await router.navigate(['/login']);
+    },
+
+    async logout(): Promise<void> {
+      // Limpieza local inmediata — no esperar al servidor
+      limpiarSesionStorage();
+      patchState(store, { usuario: null, error: null });
+      await router.navigate(['/login'], { replaceUrl: true });
+      // Revocar sesión en servidor de forma asíncrona (best-effort)
+      api.logout().catch(() => undefined);
     },
 
     limpiarError(): void {

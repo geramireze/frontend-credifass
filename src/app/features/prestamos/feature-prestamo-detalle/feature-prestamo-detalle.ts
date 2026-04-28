@@ -7,6 +7,8 @@ import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
 import { EstadoPrestamo, CuotaPrestamo, PrestamoListItem } from '../data-access/prestamos.model';
+import { UsuariosApiService } from '../../usuarios/data-access/usuarios-api';
+import { UsuarioListItem } from '../../usuarios/data-access/usuarios.model';
 
 const ESTADO_LABELS: Record<EstadoPrestamo, string> = {
   al_dia: 'Al día',
@@ -46,8 +48,11 @@ const CUOTA_LABELS: Record<CuotaPrestamo['estado'], string> = {
 export class FeaturePrestamoDetalle implements OnInit {
   protected readonly store = inject(PrestamosStore);
   private readonly authStore = inject(AuthStore);
+  private readonly usuariosApi = inject(UsuariosApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  protected readonly cobradores = signal<UsuarioListItem[]>([]);
   private readonly fb = inject(FormBuilder);
 
   protected readonly tabActivo = signal<'resumen' | 'cronograma' | 'pagos' | 'auditoria'>('cronograma');
@@ -86,6 +91,9 @@ export class FeaturePrestamoDetalle implements OnInit {
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.store.cargarDetalle(id);
+    this.usuariosApi.listar()
+      .then((res) => this.cobradores.set(res.items.filter((u) => u.rol === 'cobrador' && u.activo)))
+      .catch(() => {});
   }
 
   protected estadoLabel(e: string): string  { return ESTADO_LABELS[e as EstadoPrestamo] ?? e; }

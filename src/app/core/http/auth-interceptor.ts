@@ -1,8 +1,8 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, switchMap, throwError } from 'rxjs';
-import { AuthApiService } from '../../features/auth/data-access/auth-api';
+import { EMPTY, catchError } from 'rxjs';
 import { Router } from '@angular/router';
+import { AuthStore } from '../../features/auth/data-access/auth.store';
 
 function getToken(key: string): string | null {
   return localStorage.getItem(key) ?? sessionStorage.getItem(key);
@@ -14,11 +14,6 @@ function setTokens(accessToken: string, refreshToken: string): void {
   storage.setItem('refresh_token', refreshToken);
 }
 
-function clearTokens(): void {
-  sessionStorage.clear();
-  ['access_token', 'refresh_token', 'auth_user'].forEach((k) => localStorage.removeItem(k));
-}
-
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const accessToken = getToken('access_token');
   const authReq = accessToken
@@ -27,31 +22,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && !req.url.includes('/auth/')) {
-        const api = inject(AuthApiService);
+      if (err.status === 401 && !req.url.includes('/auth/login')) {
+        const auth   = inject(AuthStore);
         const router = inject(Router);
-        const refreshToken = getToken('refresh_token');
-
-        if (!refreshToken) {
-          clearTokens();
-          router.navigate(['/login']);
-          return throwError(() => err);
-        }
-
-        return api.refresh(refreshToken).pipe(
-          switchMap((tokens) => {
-            setTokens(tokens.accessToken, tokens.refreshToken);
-            const retried = req.clone({ setHeaders: { Authorization: `Bearer ${tokens.accessToken}` } });
-            return next(retried);
-          }),
-          catchError(() => {
-            clearTokens();
-            router.navigate(['/login']);
-            return throwError(() => err);
-          }),
-        );
+        auth.cerrarSesionLocal();
+        router.navigate(['/login'], { replaceUrl: true });
+        return EMPTY;
       }
-      return throwError(() => err);
+      throw err;
     }),
   );
 };
+
+export { setTokens };

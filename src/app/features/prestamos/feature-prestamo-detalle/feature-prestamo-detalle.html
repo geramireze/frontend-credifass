@@ -249,9 +249,13 @@
 
             <!-- Cobrador -->
             <div class="flex flex-col gap-1">
-              <label for="edit-cobrador" class="app-label">ID del cobrador <span class="text-app-muted-fg">(opcional)</span></label>
-              <input id="edit-cobrador" type="text" formControlName="cobrador_id"
-                     class="app-input" placeholder="UUID del cobrador…" />
+              <label for="edit-cobrador" class="app-label">Cobrador <span class="text-app-muted-fg">(opcional)</span></label>
+              <select id="edit-cobrador" formControlName="cobrador_id" class="app-select">
+                <option value="">Sin cobrador asignado</option>
+                @for (c of cobradores(); track c.id) {
+                  <option [value]="c.id">{{ c.nombre }}</option>
+                }
+              </select>
               <p class="text-xs text-app-muted-fg">Actual: {{ p.cobrador_nombre ?? 'Sin cobrador' }}</p>
             </div>
 
