@@ -54,6 +54,11 @@ export const routes: Routes = [
             (m) => m.FeatureAuditoria,
           ),
       },
+      {
+        path: 'credifass',
+        loadChildren: () =>
+          import('./features/credifass/credifass.routes').then((m) => m.CREDIFASS_ROUTES),
+      },
     ],
   },
   {

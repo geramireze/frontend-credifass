@@ -23,13 +23,15 @@ const BACKEND_CODES: Record<string, string> = {
 
 function extractErrorMsg(err: unknown, fallback: string): string {
   if (err instanceof TimeoutError) return 'La solicitud tardó demasiado. Verifica tu conexión e intenta de nuevo.';
-  const asAny = err as { status?: number; error?: { message?: string | string[]; code?: string }; message?: string };
+  const asAny = err as { status?: number; error?: Record<string, unknown>; message?: string };
   if (asAny?.status === 0) return 'Sin conexión al servidor. Verifica tu red e intenta de nuevo.';
   const body = asAny?.error;
-  const fromMsg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
-  if (fromMsg) return fromMsg;
-  if (body?.code && BACKEND_CODES[body.code]) return BACKEND_CODES[body.code];
-  return asAny?.message ?? fallback;
+  const code = typeof body?.['code'] === 'string' ? body['code'] : undefined;
+  if (code && BACKEND_CODES[code]) return BACKEND_CODES[code];
+  const msg = body?.['message'];
+  if (Array.isArray(msg) && msg.length > 0) return String(msg[0]);
+  if (typeof msg === 'string' && msg) return msg;
+  return fallback;
 }
 
 const estadoInicial: PagosState = {

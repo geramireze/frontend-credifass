@@ -51,6 +51,67 @@
         "maxSize": 20,
         "maxAge": "2m"
       }
+    },
+    {
+      "name": "cf-catalogo",
+      "urls": [
+        "/v1/cf/categorias",
+        "/v1/cf/productos**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 50,
+        "maxAge": "5m",
+        "timeout": "4s"
+      }
+    },
+    {
+      "name": "cf-clientes",
+      "urls": [
+        "/v1/cf/clientes**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 100,
+        "maxAge": "5m",
+        "timeout": "4s"
+      }
+    },
+    {
+      "name": "cf-dashboard",
+      "urls": [
+        "/v1/cf/dashboard"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 1,
+        "maxAge": "2m",
+        "timeout": "3s"
+      }
+    },
+    {
+      "name": "cf-ventas",
+      "urls": [
+        "/v1/cf/ventas**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 50,
+        "maxAge": "3m",
+        "timeout": "4s"
+      }
+    },
+    {
+      "name": "cf-reservas",
+      "urls": [
+        "/v1/cf/reservas**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 30,
+        "maxAge": "5m",
+        "timeout": "4s"
+      }
     }
   ]
 }

@@ -21,6 +21,12 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/usuarios',   icon: 'user-cog',         label: 'Usuarios',   roles: ['admin'] },
 ];
 
+const CF_NAV_ITEMS: NavItem[] = [
+  { path: '/credifass/productos', icon: 'package',       label: 'Inventario', mobileLabel: 'Inventario', roles: ['admin', 'supervisor'] },
+  { path: '/credifass/ventas',    icon: 'shopping-cart', label: 'Ventas',     mobileLabel: 'Ventas' },
+  { path: '/credifass/reservas',  icon: 'bookmark',      label: 'Reservas',   mobileLabel: 'Reservas' },
+];
+
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, AppIconComponent],
@@ -29,11 +35,12 @@ const NAV_ITEMS: NavItem[] = [
 })
 export class ShellComponent {
   protected readonly store    = inject(AuthStore);
-  protected readonly navItems  = NAV_ITEMS;
-  protected readonly collapsed = signal(false);
+  protected readonly navItems   = NAV_ITEMS;
+  protected readonly cfNavItems = CF_NAV_ITEMS;
+  protected readonly collapsed  = signal(false);
 
   protected readonly mobileNavItems = computed(() =>
-    this.navItems.filter(item => this.puedeVer(item)).slice(0, 5),
+    [...this.navItems, ...this.cfNavItems].filter(item => this.puedeVer(item)).slice(0, 5),
   );
 
   protected puedeVer(item: NavItem): boolean {

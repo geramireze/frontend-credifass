@@ -6,18 +6,22 @@ import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
 import { CuotaRuta, RutaHoy } from '../data-access/pagos.model';
 
-type EstadoCuota = 'pendiente' | 'cobrada' | 'vencida';
+type EstadoCuota = 'pendiente' | 'parcial' | 'pagada' | 'vencida' | 'en_mora';
 
 const ESTADO_LABELS: Record<EstadoCuota, string> = {
   pendiente: 'Pendiente',
-  cobrada: 'Cobrada',
+  parcial: 'Parcial',
+  pagada: 'Cobrada',
   vencida: 'Vencida',
+  en_mora: 'En mora',
 };
 
 const ESTADO_BADGE: Record<EstadoCuota, string> = {
   pendiente: 'badge badge-pendiente',
-  cobrada: 'badge badge-success',
+  parcial: 'badge badge-warning',
+  pagada: 'badge badge-success',
   vencida: 'badge badge-mora',
+  en_mora: 'badge badge-mora',
 };
 
 @Component({
@@ -53,7 +57,7 @@ export class FeaturePagos implements OnInit {
   }
 
   protected cuotasPendientesCount(ruta: RutaHoy): number {
-    return ruta.cuotas.filter((c) => c.estado !== 'cobrada').length;
+    return ruta.cuotas.filter((c) => c.estado !== 'pagada').length;
   }
 
   protected estadoCuotaLabel(estado: string): string {
@@ -65,6 +69,7 @@ export class FeaturePagos implements OnInit {
   }
 
   protected seleccionarCuota(cuota: CuotaRuta): void {
+    this.store.limpiarError();
     this.store.seleccionarCuota(cuota);
     this.pagoForm.patchValue({ monto: cuota.valor + cuota.mora_acumulada });
     this.pagoForm.get('notas')?.reset('');

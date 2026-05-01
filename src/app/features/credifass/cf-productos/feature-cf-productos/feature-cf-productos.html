@@ -1,0 +1,136 @@
+<div class="p-4 md:p-6 space-y-4">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <h1 class="text-2xl font-bold text-gray-900">Inventario</h1>
+    <a routerLink="../productos/nuevo"
+       class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      + Nuevo producto
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex flex-wrap gap-3">
+    <input
+      type="search"
+      placeholder="Buscar producto…"
+      [ngModel]="busqueda()"
+      (ngModelChange)="busqueda.set($event)"
+      (keyup.enter)="buscar()"
+      class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-48"
+      aria-label="Buscar producto" />
+    <select
+      [ngModel]="estadoFiltro()"
+      (ngModelChange)="estadoFiltro.set($event); buscar()"
+      class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      aria-label="Filtrar por estado">
+      <option value="">Todos los estados</option>
+      <option value="disponible">Disponible</option>
+      <option value="reservado">Reservado</option>
+      <option value="agotado">Agotado</option>
+    </select>
+    <button (click)="buscar()"
+            class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      Buscar
+    </button>
+  </div>
+
+  <!-- Loading -->
+  @if (store.loading()) {
+    <div class="flex justify-center py-10" role="status" aria-label="Cargando">
+      <div class="h-6 w-6 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (store.error()) {
+    <div class="rounded-lg bg-red-50 p-4 text-red-700" role="alert">{{ store.error() }}</div>
+  }
+
+  <!-- Tabla (desktop) / Cards (mobile) -->
+  @if (!store.loading() && store.items().length > 0) {
+    <!-- Desktop table -->
+    <div class="hidden md:block overflow-x-auto rounded-xl ring-1 ring-gray-200 shadow-sm">
+      <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Nombre</th>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Categoría</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Stock</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Venta</th>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          @for (p of store.items(); track p.id) {
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-4 py-3 font-medium text-gray-900">{{ p.nombre }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ p.categoriaNombre ?? '—' }}</td>
+              <td class="px-4 py-3 text-right tabular-nums">
+                {{ p.stockDisponible }}
+                @if (p.stockReservado > 0) {
+                  <span class="ml-1 text-xs text-amber-600">(+{{ p.stockReservado }} res.)</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-right tabular-nums">{{ p.valorVenta | cop }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
+                      [class]="estadoBadgeClass(p.estado)">
+                  {{ p.estado }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="md:hidden space-y-3">
+      @for (p of store.items(); track p.id) {
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold text-gray-900">{{ p.nombre }}</p>
+              <p class="text-xs text-gray-500">{{ p.categoriaNombre ?? 'Sin categoría' }}</p>
+            </div>
+            <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold shrink-0"
+                  [class]="estadoBadgeClass(p.estado)">
+              {{ p.estado }}
+            </span>
+          </div>
+          <div class="mt-3 flex gap-4 text-sm">
+            <span class="text-gray-500">Stock: <strong>{{ p.stockDisponible }}</strong></span>
+            <span class="text-gray-500">Venta: <strong>{{ p.valorVenta | cop }}</strong></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Paginación -->
+    @if (store.total() > store.pageSize()) {
+      <div class="flex items-center justify-between text-sm text-gray-600">
+        <span>{{ store.total() }} productos</span>
+        <div class="flex gap-2">
+          <button [disabled]="store.page() === 1"
+                  (click)="store.cambiarPagina(store.page() - 1)"
+                  class="rounded px-3 py-1 disabled:opacity-40 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Página anterior">
+            ← Anterior
+          </button>
+          <span class="px-2 py-1">{{ store.page() }}</span>
+          <button [disabled]="store.page() * store.pageSize() >= store.total()"
+                  (click)="store.cambiarPagina(store.page() + 1)"
+                  class="rounded px-3 py-1 disabled:opacity-40 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Página siguiente">
+            Siguiente →
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+  @if (!store.loading() && store.items().length === 0) {
+    <div class="rounded-xl border-2 border-dashed border-gray-200 py-16 text-center">
+      <p class="text-gray-400">Sin productos. <a routerLink="../productos/nuevo" class="text-blue-600 underline">Crear el primero</a></p>
+    </div>
+  }
+</div>

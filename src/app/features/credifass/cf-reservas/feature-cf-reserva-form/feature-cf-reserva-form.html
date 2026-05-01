@@ -1,0 +1,180 @@
+<div class="p-4 md:p-8 max-w-2xl mx-auto">
+
+  <a routerLink="/credifass/reservas"
+     class="inline-flex items-center gap-1.5 text-sm text-app-muted-fg hover:text-app-fg mb-6">
+    <app-icon name="chevron-left" [size]="14" />
+    Volver a reservas
+  </a>
+
+  <div class="page-header">
+    <h1 class="page-title">Nueva reserva</h1>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="card p-6 space-y-5">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Cliente buscador -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="buscar-cliente-r">Cliente *</label>
+
+          @if (clienteSeleccionado()) {
+            <div class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 bg-gray-50">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ clienteSeleccionado()!.nombre }}</p>
+                <p class="text-xs text-gray-500">{{ clienteSeleccionado()!.documento }}</p>
+              </div>
+              <button type="button" (click)="limpiarCliente()"
+                      class="shrink-0 p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                      aria-label="Cambiar cliente">
+                <app-icon name="x" [size]="14" />
+              </button>
+            </div>
+          } @else {
+            <div class="relative">
+              <div class="relative">
+                <app-icon name="search" [size]="16"
+                          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input id="buscar-cliente-r"
+                       type="text"
+                       [value]="busquedaCliente()"
+                       (input)="onBusquedaInput($any($event.target).value)"
+                       (focus)="inputFocused.set(true); mostrarDropdown.set(clientesFiltrados().length > 0)"
+                       (blur)="onInputBlur()"
+                       placeholder="Buscar por nombre o documento…"
+                       autocomplete="off"
+                       class="app-input pl-9"
+                       [class.border-status-error]="campo('clienteId')" />
+                @if (buscando()) {
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Buscando…</span>
+                }
+              </div>
+
+              @if (mostrarDropdown() && clientesFiltrados().length > 0) {
+                <ul class="absolute z-20 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                  @for (c of clientesFiltrados(); track c.id) {
+                    <li>
+                      <button type="button"
+                              (click)="seleccionarCliente(c)"
+                              class="w-full text-left px-4 py-2.5 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none">
+                        <p class="text-sm font-medium">{{ c.nombre }}</p>
+                        <p class="text-xs text-gray-500">{{ c.documento }}{{ c.telefono ? ' · ' + c.telefono : '' }}</p>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+
+          @if (campo('clienteId')) {
+            <p class="text-xs text-status-error-fg mt-1">Selecciona un cliente</p>
+          }
+        </div>
+
+        <!-- Producto -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="prod">Producto *</label>
+          <select id="prod" formControlName="productoId" class="app-input"
+                  [class.border-status-error]="campo('productoId')">
+            <option value="">Seleccionar producto…</option>
+            @for (p of productos(); track p.id) {
+              <option [value]="p.id">
+                {{ p.nombre }} — Stock: {{ p.stockDisponible }} ({{ p.valorVenta | cop }})
+              </option>
+            }
+          </select>
+          @if (campo('productoId')) {
+            <p class="text-xs text-status-error-fg mt-1">Selecciona un producto</p>
+          }
+          @if (productoSeleccionado(); as ps) {
+            <p class="text-xs text-gray-500 mt-1">
+              Precio sugerido: {{ ps.valorVenta | cop }} · Stock disponible: {{ ps.stockDisponible }}
+            </p>
+          }
+        </div>
+
+        <!-- Cantidad -->
+        <div>
+          <label class="app-label" for="qty">Cantidad *</label>
+          <input id="qty" type="number" min="1" formControlName="cantidad" class="app-input"
+                 [class.border-status-error]="campo('cantidad')" />
+          @if (campo('cantidad')) {
+            <p class="text-xs text-status-error-fg mt-1">Mínimo 1</p>
+          }
+        </div>
+
+        <!-- Precio acordado -->
+        <div>
+          <label class="app-label" for="precio">Precio acordado (COP) *</label>
+          <input id="precio" type="number" min="0" formControlName="precioAcordado" class="app-input"
+                 [class.border-status-error]="campo('precioAcordado')"
+                 placeholder="0" />
+          @if (campo('precioAcordado')) {
+            <p class="text-xs text-status-error-fg mt-1">Precio numérico requerido</p>
+          }
+        </div>
+
+        <!-- Tipo de origen -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="origen">Tipo de reserva *</label>
+          <select id="origen" formControlName="tipoOrigen" class="app-input">
+            @for (o of origenes; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Abono inicial -->
+        <div>
+          <label class="app-label" for="abono">Abono inicial (COP)</label>
+          <input id="abono" type="number" min="0" formControlName="abonoInicial" class="app-input"
+                 placeholder="0" />
+        </div>
+
+        <!-- Medio de pago abono -->
+        <div>
+          <label class="app-label" for="medio">Medio de pago del abono</label>
+          <select id="medio" formControlName="medioPagoAbono" class="app-input">
+            @for (m of mediosPago; track m) {
+              <option [value]="m">{{ m | titlecase }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Fecha entrega estimada -->
+        <div>
+          <label class="app-label" for="fentrega">Fecha de entrega estimada</label>
+          <input id="fentrega" type="date" formControlName="fechaEntregaEstimada" class="app-input" />
+        </div>
+
+        <!-- Notas -->
+        <div>
+          <label class="app-label" for="notas">Notas</label>
+          <input id="notas" type="text" formControlName="notas" class="app-input"
+                 placeholder="Observaciones, acuerdos…" />
+        </div>
+
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" [disabled]="guardando()"
+                class="btn-primary flex-1 sm:flex-none disabled:opacity-50">
+          {{ guardando() ? 'Guardando…' : 'Crear reserva' }}
+        </button>
+        <a routerLink="/credifass/reservas" class="btn-secondary flex-1 sm:flex-none text-center">
+          Cancelar
+        </a>
+      </div>
+
+    </div>
+  </form>
+</div>

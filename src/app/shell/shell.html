@@ -46,6 +46,33 @@
           </a>
         }
       }
+
+      <!-- Credifass section -->
+      <div class="pt-4 pb-1">
+        @if (!collapsed()) {
+          <p class="text-[11px] font-semibold text-sidebar-text/50 tracking-widest uppercase px-2">Credifass</p>
+        } @else {
+          <hr class="border-white/10" />
+        }
+      </div>
+      @for (item of cfNavItems; track item.path) {
+        @if (puedeVer(item)) {
+          <a [routerLink]="item.path"
+             routerLinkActive #rla="routerLinkActive"
+             [attr.aria-label]="item.label"
+             [attr.aria-current]="rla.isActive ? 'page' : null"
+             class="flex items-center gap-2.5 h-10 rounded px-3 text-sm font-medium transition-colors"
+             [class.bg-primary]="rla.isActive"
+             [class.text-white]="rla.isActive"
+             [class.text-sidebar-text]="!rla.isActive"
+             [class.hover:bg-white/5]="!rla.isActive">
+            <app-icon [name]="item.icon" [size]="20" class="shrink-0" />
+            @if (!collapsed()) {
+              <span>{{ item.label }}</span>
+            }
+          </a>
+        }
+      }
     </nav>
 
     <!-- User + logout -->

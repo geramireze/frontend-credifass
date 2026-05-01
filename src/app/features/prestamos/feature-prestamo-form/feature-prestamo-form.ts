@@ -143,9 +143,16 @@ export class FeaturePrestamoForm implements OnInit, OnDestroy {
       const id = await this.store.crear(dto);
       await this.router.navigate(['/prestamos', id]);
     } catch (err: unknown) {
-      const body = (err as { error?: { message?: string | string[] } })?.error;
-      const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
-      this.error.set(msg ?? 'No se pudo crear el préstamo. Verifica los datos e intenta de nuevo.');
+      const body = (err as { error?: Record<string, unknown> })?.error;
+      const code = body?.['code'] as string | undefined;
+      const MENSAJES: Record<string, string> = {
+        MAX_ACTIVE_LOANS:              'Este cliente ya tiene el máximo de préstamos activos. Cancela uno antes de crear otro.',
+        MONTO_FUERA_DE_RANGO:          'El monto está fuera del rango permitido (mínimo $50.000).',
+        FECHA_INICIO_PASADA:           'No tienes permiso para registrar préstamos con fecha pasada.',
+        FECHA_INICIO_DEMASIADO_FUTURA: 'La fecha de inicio no puede superar 30 días en el futuro.',
+        COBRADOR_INVALIDO:             'El cobrador seleccionado no existe o no está activo.',
+      };
+      this.error.set(code ? (MENSAJES[code] ?? `Error inesperado (${code}).`) : 'No se pudo crear el préstamo. Verifica los datos e intenta de nuevo.');
       this.loading.set(false);
     }
   }

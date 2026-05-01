@@ -1,0 +1,240 @@
+<div class="p-4 md:p-8 max-w-3xl mx-auto">
+
+  <a routerLink="/credifass/ventas"
+     class="inline-flex items-center gap-1.5 text-sm text-app-muted-fg hover:text-app-fg mb-6">
+    <app-icon name="chevron-left" [size]="14" />
+    Volver a ventas
+  </a>
+
+  <div class="page-header">
+    <h1 class="page-title">Nueva venta</h1>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="space-y-4">
+
+    <!-- Sección 1: Cliente y tipo -->
+    <div class="card p-6 space-y-4">
+      <h2 class="font-semibold text-gray-700">Datos generales</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Cliente buscador -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="buscar-cliente">Cliente *</label>
+
+          @if (clienteSeleccionado()) {
+            <!-- Cliente seleccionado -->
+            <div class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 bg-gray-50">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ clienteSeleccionado()!.nombre }}</p>
+                <p class="text-xs text-gray-500">{{ clienteSeleccionado()!.documento }}</p>
+              </div>
+              <button type="button" (click)="limpiarCliente()"
+                      class="shrink-0 p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                      aria-label="Cambiar cliente">
+                <app-icon name="x" [size]="14" />
+              </button>
+            </div>
+          } @else {
+            <!-- Input de búsqueda -->
+            <div class="relative">
+              <div class="relative">
+                <app-icon name="search" [size]="16"
+                          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input id="buscar-cliente"
+                       type="text"
+                       [value]="busquedaCliente()"
+                       (input)="onBusquedaInput($any($event.target).value)"
+                       (focus)="inputFocused.set(true); mostrarDropdown.set(clientesFiltrados().length > 0)"
+                       (blur)="onInputBlur()"
+                       placeholder="Buscar por nombre o documento…"
+                       autocomplete="off"
+                       class="app-input pl-9"
+                       [class.border-status-error]="campo('clienteId')" />
+                @if (buscando()) {
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Buscando…</span>
+                }
+              </div>
+
+              @if (mostrarDropdown() && clientesFiltrados().length > 0) {
+                <ul class="absolute z-20 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                  @for (c of clientesFiltrados(); track c.id) {
+                    <li>
+                      <button type="button"
+                              (click)="seleccionarCliente(c)"
+                              class="w-full text-left px-4 py-2.5 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none">
+                        <p class="text-sm font-medium">{{ c.nombre }}</p>
+                        <p class="text-xs text-gray-500">{{ c.documento }}{{ c.telefono ? ' · ' + c.telefono : '' }}</p>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+
+          @if (campo('clienteId')) {
+            <p class="text-xs text-status-error-fg mt-1">Selecciona un cliente</p>
+          }
+        </div>
+
+        <!-- Tipo -->
+        <div>
+          <label class="app-label">Tipo de venta *</label>
+          <div class="flex gap-3 mt-1">
+            @for (t of [['contado','Contado'], ['cuotas','A cuotas']]; track t[0]) {
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" formControlName="tipo" [value]="t[0]"
+                       class="accent-primary" />
+                <span class="text-sm">{{ t[1] }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- Notas -->
+        <div>
+          <label class="app-label" for="notas">Notas</label>
+          <input id="notas" type="text" formControlName="notas" class="app-input"
+                 placeholder="Observaciones opcionales" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección 2: Líneas de producto -->
+    <div class="card p-6 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-gray-700">Productos</h2>
+        <button type="button" (click)="agregarLinea()"
+                class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+          <app-icon name="plus" [size]="14" />
+          Agregar línea
+        </button>
+      </div>
+
+      <div formArrayName="lineas" class="space-y-3">
+        @for (linea of lineas.controls; track $index) {
+          <div [formGroupName]="$index" class="flex gap-3 items-start flex-wrap sm:flex-nowrap">
+            <!-- Producto -->
+            <div class="flex-1 min-w-0">
+              <label [for]="'prod-'+$index" class="app-label">Producto *</label>
+              <select [id]="'prod-'+$index" formControlName="productoId" class="app-input">
+                <option value="">Seleccionar…</option>
+                @for (p of productos(); track p.id) {
+                  <option [value]="p.id">
+                    {{ p.nombre }} — Stock: {{ p.stockDisponible }}
+                    ({{ p.valorVenta | cop }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <!-- Cantidad -->
+            <div class="w-28 shrink-0">
+              <label [for]="'qty-'+$index" class="app-label">Cantidad *</label>
+              <input [id]="'qty-'+$index" type="number" min="1" formControlName="cantidad"
+                     class="app-input" />
+            </div>
+
+            <!-- Subtotal -->
+            <div class="w-32 shrink-0 text-right mt-auto pb-1">
+              <p class="text-xs text-gray-500">Subtotal</p>
+              <p class="font-semibold tabular-nums">{{ subtotalLinea($index) | cop }}</p>
+            </div>
+
+            <!-- Quitar -->
+            @if (lineas.length > 1) {
+              <button type="button" (click)="quitarLinea($index)"
+                      class="mt-auto mb-1 p-1 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                      [attr.aria-label]="'Quitar línea ' + ($index + 1)">
+                <app-icon name="trash-2" [size]="16" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Total -->
+      <div class="flex justify-end border-t border-gray-100 pt-3">
+        <div class="text-right">
+          <p class="text-sm text-gray-500">Total venta</p>
+          <p class="text-2xl font-bold tabular-nums">{{ totalVenta() | cop }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección 3: Plan de cuotas (solo si tipo=cuotas) -->
+    @if (esCuotas()) {
+      <div class="card p-6 space-y-4" formGroupName="planCuotas">
+        <h2 class="font-semibold text-gray-700">Plan de cuotas</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- N° cuotas -->
+          <div>
+            <label class="app-label" for="ncuotas">N° de cuotas *</label>
+            <input id="ncuotas" type="number" min="1" max="52" formControlName="nCuotas"
+                   class="app-input" (change)="simular()" />
+          </div>
+
+          <!-- Fecha inicio -->
+          <div>
+            <label class="app-label" for="finicio">Primera cuota *</label>
+            <input id="finicio" type="date" formControlName="fechaInicio"
+                   class="app-input" (change)="simular()" />
+          </div>
+
+          <!-- Intervalo -->
+          <div>
+            <label class="app-label" for="intervalo">Frecuencia *</label>
+            <select id="intervalo" formControlName="intervalo" class="app-input" (change)="simular()">
+              @for (i of intervalos; track i.value) {
+                <option [value]="i.value">{{ i.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Botón simular -->
+        <button type="button" (click)="simular()" [disabled]="simulando()"
+                class="btn-secondary text-sm disabled:opacity-50">
+          {{ simulando() ? 'Calculando…' : 'Simular cuotas' }}
+        </button>
+
+        <!-- Resultado simulación -->
+        @if (simulacion()) {
+          <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <p class="text-sm font-semibold text-blue-700 mb-2">
+              {{ simulacion()!.cuotas.length }} cuota(s) de aprox. {{ simulacion()!.cuotas[0]?.valor | cop }}
+            </p>
+            <div class="max-h-48 overflow-y-auto space-y-1">
+              @for (c of simulacion()!.cuotas; track c.numero) {
+                <div class="flex justify-between text-xs text-blue-800">
+                  <span>#{{ c.numero }} — {{ c.fechaEsperada | date:'dd/MM/yyyy' }}</span>
+                  <span class="font-semibold tabular-nums">{{ c.valor | cop }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Acciones finales -->
+    <div class="flex gap-3">
+      <button type="submit" [disabled]="guardando()"
+              class="btn-primary flex-1 sm:flex-none disabled:opacity-50">
+        {{ guardando() ? 'Registrando…' : 'Registrar venta' }}
+      </button>
+      <a routerLink="/credifass/ventas" class="btn-secondary flex-1 sm:flex-none text-center">
+        Cancelar
+      </a>
+    </div>
+
+  </form>
+</div>

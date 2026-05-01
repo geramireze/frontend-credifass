@@ -1,0 +1,123 @@
+<div class="p-4 md:p-6 space-y-4">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <h1 class="text-2xl font-bold text-gray-900">Clientes Credifass</h1>
+    <a routerLink="../clientes/nuevo"
+       class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      + Nuevo cliente
+    </a>
+  </div>
+
+  <div class="flex gap-3 flex-wrap">
+    <input type="search" placeholder="Buscar por nombre o identificación…"
+           [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+           (keyup.enter)="buscar()"
+           class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-64"
+           aria-label="Buscar cliente" />
+    <button (click)="buscar()"
+            class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      Buscar
+    </button>
+  </div>
+
+  @if (store.loading()) {
+    <div class="flex justify-center py-10" role="status" aria-label="Cargando">
+      <div class="h-6 w-6 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+    </div>
+  }
+  @if (store.error()) {
+    <div class="rounded-lg bg-red-50 p-4 text-red-700" role="alert">{{ store.error() }}</div>
+  }
+
+  @if (!store.loading() && store.items().length > 0) {
+    <!-- Desktop -->
+    <div class="hidden md:block overflow-x-auto rounded-xl ring-1 ring-gray-200 shadow-sm">
+      <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Nombre</th>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Identificación</th>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Teléfono</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Saldo</th>
+            <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Estado</th>
+            <th scope="col" class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          @for (c of store.items(); track c.id) {
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-4 py-3 font-medium text-gray-900">{{ c.nombreCompleto }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ c.tipoIdentificacion }} {{ c.numeroIdentificacion }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ c.telefono }}</td>
+              <td class="px-4 py-3 text-right tabular-nums"
+                  [class]="(c.cuotasVencidas ?? 0) > 0 ? 'text-red-700 font-semibold' : 'text-gray-700'">
+                {{ c.saldoPendiente | cop }}
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
+                      [class]="c.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'">
+                  {{ c.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a [routerLink]="['../clientes', c.id, 'editar']"
+                   class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                  Editar
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="md:hidden space-y-3">
+      @for (c of store.items(); track c.id) {
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold text-gray-900">{{ c.nombreCompleto }}</p>
+              <p class="text-xs text-gray-500">{{ c.tipoIdentificacion }} {{ c.numeroIdentificacion }}</p>
+              <p class="text-xs text-gray-500">{{ c.telefono }}</p>
+            </div>
+            <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold shrink-0"
+                  [class]="c.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'">
+              {{ c.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="mt-2 flex items-center justify-between">
+            <span class="text-sm" [class]="(c.cuotasVencidas ?? 0) > 0 ? 'text-red-700 font-semibold' : 'text-gray-700'">
+              {{ c.saldoPendiente | cop }}
+            </span>
+            <a [routerLink]="['../clientes', c.id, 'editar']"
+               class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+              Editar
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (store.total() > store.pageSize()) {
+      <div class="flex items-center justify-between text-sm text-gray-600">
+        <span>{{ store.total() }} clientes</span>
+        <div class="flex gap-2">
+          <button [disabled]="store.page() === 1" (click)="store.cambiarPagina(store.page() - 1)"
+                  class="rounded px-3 py-1 disabled:opacity-40 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Página anterior">← Anterior</button>
+          <span class="px-2 py-1">{{ store.page() }}</span>
+          <button [disabled]="store.page() * store.pageSize() >= store.total()"
+                  (click)="store.cambiarPagina(store.page() + 1)"
+                  class="rounded px-3 py-1 disabled:opacity-40 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Página siguiente">Siguiente →</button>
+        </div>
+      </div>
+    }
+  }
+
+  @if (!store.loading() && store.items().length === 0) {
+    <div class="rounded-xl border-2 border-dashed border-gray-200 py-16 text-center">
+      <p class="text-gray-400">Sin clientes. <a routerLink="../clientes/nuevo" class="text-blue-600 underline">Registrar el primero</a></p>
+    </div>
+  }
+</div>

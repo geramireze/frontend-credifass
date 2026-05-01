@@ -1,0 +1,108 @@
+<div class="p-4 md:p-8 max-w-2xl mx-auto">
+
+  <a routerLink="/credifass/clientes"
+     class="inline-flex items-center gap-1.5 text-sm text-app-muted-fg hover:text-app-fg mb-6">
+    <app-icon name="chevron-left" [size]="14" />
+    Volver a clientes
+  </a>
+
+  <div class="page-header">
+    <h1 class="page-title">{{ esEdicion() ? 'Editar cliente' : 'Nuevo cliente Credifass' }}</h1>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert-error mb-6">
+      <app-icon name="alert-circle" [size]="16" class="shrink-0" />
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="card p-6 space-y-5">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Tipo identificación -->
+        <div>
+          <label class="app-label" for="tipoId">Tipo de identificación *</label>
+          <select id="tipoId" formControlName="tipoIdentificacion" class="app-input">
+            @for (t of tiposId; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Número identificación -->
+        <div>
+          <label class="app-label" for="numId">Número de identificación *</label>
+          <input id="numId" type="text" formControlName="numeroIdentificacion" class="app-input"
+                 [class.border-status-error]="campo('numeroIdentificacion')"
+                 placeholder="1234567890" />
+          @if (campo('numeroIdentificacion')) {
+            <p class="text-xs text-status-error-fg mt-1">Mínimo 5 caracteres</p>
+          }
+        </div>
+
+        <!-- Nombre -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="nombre">Nombre completo *</label>
+          <input id="nombre" type="text" formControlName="nombreCompleto" class="app-input"
+                 [class.border-status-error]="campo('nombreCompleto')"
+                 placeholder="María López García" />
+          @if (campo('nombreCompleto')) {
+            <p class="text-xs text-status-error-fg mt-1">Requerido (mín. 3 caracteres)</p>
+          }
+        </div>
+
+        <!-- Teléfono -->
+        <div>
+          <label class="app-label" for="tel">Teléfono *</label>
+          <input id="tel" type="tel" formControlName="telefono" class="app-input"
+                 [class.border-status-error]="campo('telefono')"
+                 placeholder="3001234567" />
+          @if (campo('telefono')) {
+            <p class="text-xs text-status-error-fg mt-1">Solo dígitos (7-15)</p>
+          }
+        </div>
+
+        <!-- Correo -->
+        <div>
+          <label class="app-label" for="correo">Correo electrónico</label>
+          <input id="correo" type="email" formControlName="correo" class="app-input"
+                 [class.border-status-error]="campo('correo')"
+                 placeholder="maria@ejemplo.com" />
+          @if (campo('correo')) {
+            <p class="text-xs text-status-error-fg mt-1">Correo inválido</p>
+          }
+        </div>
+
+        <!-- Dirección -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="dir">Dirección</label>
+          <input id="dir" type="text" formControlName="direccion" class="app-input"
+                 placeholder="Calle 123 #45-67, Bogotá" />
+        </div>
+
+        <!-- Notas -->
+        <div class="sm:col-span-2">
+          <label class="app-label" for="notas">Notas internas</label>
+          <textarea id="notas" formControlName="notas" rows="3"
+                    class="app-input resize-none"
+                    placeholder="Referencias, observaciones…"></textarea>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex gap-3 pt-2">
+        <button type="submit" [disabled]="guardando()"
+                class="btn-primary flex-1 sm:flex-none disabled:opacity-50">
+          {{ guardando() ? 'Guardando…' : (esEdicion() ? 'Actualizar' : 'Crear cliente') }}
+        </button>
+        <a routerLink="/credifass/clientes" class="btn-secondary flex-1 sm:flex-none text-center">
+          Cancelar
+        </a>
+      </div>
+
+    </div>
+  </form>
+</div>
