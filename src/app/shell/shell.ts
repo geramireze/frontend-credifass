@@ -1,5 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationStart, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthStore } from '../features/auth/data-access/auth.store';
 import { AppIconComponent } from '../shared/components/icon/icon';
 
@@ -22,9 +32,10 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const CF_NAV_ITEMS: NavItem[] = [
-  { path: '/credifass/productos', icon: 'package',       label: 'Inventario', mobileLabel: 'Inventario', roles: ['admin', 'supervisor'] },
-  { path: '/credifass/ventas',    icon: 'shopping-cart', label: 'Ventas',     mobileLabel: 'Ventas' },
-  { path: '/credifass/reservas',  icon: 'bookmark',      label: 'Reservas',   mobileLabel: 'Reservas' },
+  { path: '/credifass/clientes',  icon: 'users',         label: 'CF Clientes',  mobileLabel: 'CF Cli.' },
+  { path: '/credifass/productos', icon: 'package',       label: 'Inventario',   mobileLabel: 'Invent.', roles: ['admin', 'supervisor'] },
+  { path: '/credifass/ventas',    icon: 'shopping-cart', label: 'Ventas CF',    mobileLabel: 'Ventas' },
+  { path: '/credifass/reservas',  icon: 'bookmark',      label: 'Reservas CF',  mobileLabel: 'Reservas' },
 ];
 
 @Component({
@@ -34,14 +45,31 @@ const CF_NAV_ITEMS: NavItem[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShellComponent {
-  protected readonly store    = inject(AuthStore);
+  protected readonly store      = inject(AuthStore);
   protected readonly navItems   = NAV_ITEMS;
   protected readonly cfNavItems = CF_NAV_ITEMS;
   protected readonly collapsed  = signal(false);
+  protected readonly mobileMenuOpen = signal(false);
+
+  private readonly router     = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly mobileNavItems = computed(() =>
-    [...this.navItems, ...this.cfNavItems].filter(item => this.puedeVer(item)).slice(0, 5),
+    [...this.navItems, ...this.cfNavItems].filter(item => this.puedeVer(item)).slice(0, 4),
   );
+
+  constructor() {
+    // Cierra el drawer cuando el usuario navega a otra ruta
+    this.router.events.pipe(
+      filter(e => e instanceof NavigationStart),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.mobileMenuOpen.set(false));
+
+    // Bloquea el scroll del body cuando el drawer está abierto
+    effect(() => {
+      document.body.style.overflow = this.mobileMenuOpen() ? 'hidden' : '';
+    });
+  }
 
   protected puedeVer(item: NavItem): boolean {
     if (!item.roles) return true;
@@ -50,6 +78,7 @@ export class ShellComponent {
   }
 
   protected async cerrarSesion(): Promise<void> {
+    this.mobileMenuOpen.set(false);
     await this.store.logout();
   }
 }

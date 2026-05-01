@@ -1,8 +1,111 @@
 <div class="flex h-screen overflow-hidden bg-app-bg">
 
-  <!-- ── Sidebar (desktop ≥ md only) ──────────────────────── -->
+  <!-- ── Backdrop (mobile/tablet drawer) ──────────────────── -->
+  <div
+    class="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 lg:hidden"
+    [class.opacity-0]="!mobileMenuOpen()"
+    [class.pointer-events-none]="!mobileMenuOpen()"
+    (click)="mobileMenuOpen.set(false)"
+    aria-hidden="true">
+  </div>
+
+  <!-- ── Drawer lateral (mobile + tablet, < lg) ────────────── -->
   <aside
-    class="hidden md:flex flex-col shrink-0 bg-sidebar transition-[width] duration-200"
+    class="fixed inset-y-0 left-0 z-50 w-72 bg-sidebar flex flex-col transition-transform duration-300 ease-in-out lg:hidden shadow-2xl"
+    [style.transform]="mobileMenuOpen() ? 'translateX(0)' : 'translateX(-100%)'"
+    [attr.aria-hidden]="!mobileMenuOpen()"
+    aria-label="Menú de navegación">
+
+    <!-- Drawer: cabecera -->
+    <div class="flex items-center justify-between px-4 h-16 shrink-0 border-b border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded bg-primary shrink-0">
+          <app-icon name="banknote" [size]="20" class="text-white" />
+        </div>
+        <span class="text-white font-bold text-base">CrediFass</span>
+      </div>
+      <button
+        type="button"
+        (click)="mobileMenuOpen.set(false)"
+        aria-label="Cerrar menú"
+        class="flex items-center justify-center w-10 h-10 rounded text-sidebar-text hover:bg-white/10 transition-colors cursor-pointer">
+        <app-icon name="x" [size]="20" />
+      </button>
+    </div>
+
+    <!-- Drawer: sección principal -->
+    <div class="px-4 pt-4 pb-2 shrink-0">
+      <p class="text-[11px] font-semibold text-sidebar-text/50 tracking-widest uppercase">Menú principal</p>
+    </div>
+
+    <!-- Drawer: ítems de navegación -->
+    <nav class="flex-1 overflow-y-auto px-3 space-y-0.5 pb-4" aria-label="Menú">
+      @for (item of navItems; track item.path) {
+        @if (puedeVer(item)) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive #rla="routerLinkActive"
+            [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
+            [attr.aria-label]="item.label"
+            [attr.aria-current]="rla.isActive ? 'page' : null"
+            class="flex items-center gap-3 h-11 rounded px-3 text-sm font-medium transition-colors cursor-pointer"
+            [class.bg-primary]="rla.isActive"
+            [class.text-white]="rla.isActive"
+            [class.text-sidebar-text]="!rla.isActive">
+            <app-icon [name]="item.icon" [size]="20" class="shrink-0" />
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      }
+
+      <!-- Drawer: separador CrediFass -->
+      <div class="pt-4 pb-2 shrink-0">
+        <p class="text-[11px] font-semibold text-sidebar-text/50 tracking-widest uppercase px-2">CrediFass</p>
+      </div>
+
+      @for (item of cfNavItems; track item.path) {
+        @if (puedeVer(item)) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive #rla="routerLinkActive"
+            [attr.aria-label]="item.label"
+            [attr.aria-current]="rla.isActive ? 'page' : null"
+            class="flex items-center gap-3 h-11 rounded px-3 text-sm font-medium transition-colors cursor-pointer"
+            [class.bg-primary]="rla.isActive"
+            [class.text-white]="rla.isActive"
+            [class.text-sidebar-text]="!rla.isActive">
+            <app-icon [name]="item.icon" [size]="20" class="shrink-0" />
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      }
+    </nav>
+
+    <!-- Drawer: pie (usuario + cerrar sesión) -->
+    <div class="p-3 border-t border-white/10 shrink-0">
+      <div class="flex items-center gap-2 px-2 py-2 rounded hover:bg-white/5 mb-1">
+        <div class="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center text-white text-xs font-bold shrink-0">
+          {{ (store.usuario()?.nombre ?? 'U')[0].toUpperCase() }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white text-xs font-semibold truncate">{{ store.usuario()?.nombre }}</p>
+          <p class="text-sidebar-text text-[11px] truncate">{{ store.usuario()?.rol }}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="cerrarSesion()"
+        aria-label="Cerrar sesión"
+        class="flex items-center gap-2 w-full h-10 rounded px-3 text-sidebar-text text-sm hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+        <app-icon name="log-out" [size]="16" class="shrink-0" />
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Sidebar fijo (desktop ≥ lg) ─────────────────────── -->
+  <aside
+    class="hidden lg:flex flex-col shrink-0 bg-sidebar transition-[width] duration-200"
     [style.width]="collapsed() ? '64px' : '260px'"
     aria-label="Navegación principal">
 
@@ -16,7 +119,6 @@
       }
     </div>
 
-    <!-- Section label -->
     @if (!collapsed()) {
       <div class="px-4 pt-4 pb-2">
         <p class="text-[11px] font-semibold text-sidebar-text/50 tracking-widest uppercase">Menú principal</p>
@@ -25,20 +127,20 @@
       <div class="pt-4"></div>
     }
 
-    <!-- Nav items -->
     <nav class="flex-1 overflow-y-auto px-3 space-y-0.5" aria-label="Menú">
       @for (item of navItems; track item.path) {
         @if (puedeVer(item)) {
-          <a [routerLink]="item.path"
-             routerLinkActive #rla="routerLinkActive"
-             [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
-             [attr.aria-label]="item.label"
-             [attr.aria-current]="rla.isActive ? 'page' : null"
-             class="flex items-center gap-2.5 h-10 rounded px-3 text-sm font-medium transition-colors"
-             [class.bg-primary]="rla.isActive"
-             [class.text-white]="rla.isActive"
-             [class.text-sidebar-text]="!rla.isActive"
-             [class.hover:bg-white/5]="!rla.isActive">
+          <a
+            [routerLink]="item.path"
+            routerLinkActive #rla="routerLinkActive"
+            [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
+            [attr.aria-label]="item.label"
+            [attr.aria-current]="rla.isActive ? 'page' : null"
+            class="flex items-center gap-2.5 h-10 rounded px-3 text-sm font-medium transition-colors cursor-pointer"
+            [class.bg-primary]="rla.isActive"
+            [class.text-white]="rla.isActive"
+            [class.text-sidebar-text]="!rla.isActive"
+            [class.hover:bg-white/5]="!rla.isActive">
             <app-icon [name]="item.icon" [size]="20" class="shrink-0" />
             @if (!collapsed()) {
               <span>{{ item.label }}</span>
@@ -47,25 +149,27 @@
         }
       }
 
-      <!-- Credifass section -->
+      <!-- Sección CrediFass en sidebar desktop -->
       <div class="pt-4 pb-1">
         @if (!collapsed()) {
-          <p class="text-[11px] font-semibold text-sidebar-text/50 tracking-widest uppercase px-2">Credifass</p>
+          <p class="text-[11px] font-semibold text-sidebar-text/50 tracking-widest uppercase px-2">CrediFass</p>
         } @else {
           <hr class="border-white/10" />
         }
       </div>
+
       @for (item of cfNavItems; track item.path) {
         @if (puedeVer(item)) {
-          <a [routerLink]="item.path"
-             routerLinkActive #rla="routerLinkActive"
-             [attr.aria-label]="item.label"
-             [attr.aria-current]="rla.isActive ? 'page' : null"
-             class="flex items-center gap-2.5 h-10 rounded px-3 text-sm font-medium transition-colors"
-             [class.bg-primary]="rla.isActive"
-             [class.text-white]="rla.isActive"
-             [class.text-sidebar-text]="!rla.isActive"
-             [class.hover:bg-white/5]="!rla.isActive">
+          <a
+            [routerLink]="item.path"
+            routerLinkActive #rla="routerLinkActive"
+            [attr.aria-label]="item.label"
+            [attr.aria-current]="rla.isActive ? 'page' : null"
+            class="flex items-center gap-2.5 h-10 rounded px-3 text-sm font-medium transition-colors cursor-pointer"
+            [class.bg-primary]="rla.isActive"
+            [class.text-white]="rla.isActive"
+            [class.text-sidebar-text]="!rla.isActive"
+            [class.hover:bg-white/5]="!rla.isActive">
             <app-icon [name]="item.icon" [size]="20" class="shrink-0" />
             @if (!collapsed()) {
               <span>{{ item.label }}</span>
@@ -75,7 +179,7 @@
       }
     </nav>
 
-    <!-- User + logout -->
+    <!-- Usuario + logout en sidebar desktop -->
     <div class="p-3 mt-auto border-t border-white/5 shrink-0">
       @if (!collapsed()) {
         <div class="flex items-center gap-2 px-2 py-2 rounded hover:bg-white/5 mb-1">
@@ -88,72 +192,95 @@
           </div>
         </div>
       }
-      <button type="button"
-              (click)="cerrarSesion()"
-              aria-label="Cerrar sesión"
-              class="flex items-center gap-2 w-full h-9 rounded px-3 text-sidebar-text text-sm hover:bg-white/5 hover:text-white transition-colors">
+      <button
+        type="button"
+        (click)="cerrarSesion()"
+        aria-label="Cerrar sesión"
+        class="flex items-center gap-2 w-full h-9 rounded px-3 text-sidebar-text text-sm hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
         <app-icon name="log-out" [size]="16" class="shrink-0" />
         @if (!collapsed()) { <span>Cerrar sesión</span> }
       </button>
     </div>
   </aside>
 
-  <!-- ── Main content area ─────────────────────────────────── -->
+  <!-- ── Área de contenido principal ──────────────────────── -->
   <div class="flex flex-col flex-1 min-w-0">
 
-    <!-- Top bar -->
+    <!-- Topbar -->
     <header class="h-14 bg-white border-b border-app-border flex items-center px-4 gap-3 shrink-0">
-      <!-- Desktop sidebar toggle -->
-      <button type="button"
-              (click)="collapsed.update(v => !v)"
-              aria-label="Toggle sidebar"
-              class="hidden md:inline-flex btn-icon">
+
+      <!-- Botón hamburger (mobile + tablet, < lg) -->
+      <button
+        type="button"
+        (click)="mobileMenuOpen.set(true)"
+        aria-label="Abrir menú"
+        [attr.aria-expanded]="mobileMenuOpen()"
+        aria-controls="mobile-drawer"
+        class="lg:hidden btn-icon w-10 h-10">
+        <app-icon name="menu" [size]="22" />
+      </button>
+
+      <!-- Toggle collapse del sidebar (solo desktop, ≥ lg) -->
+      <button
+        type="button"
+        (click)="collapsed.update(v => !v)"
+        aria-label="Contraer/expandir sidebar"
+        class="hidden lg:inline-flex btn-icon">
         <app-icon [name]="collapsed() ? 'chevron-right' : 'chevron-left'" [size]="18" />
       </button>
-      <!-- Mobile: brand name -->
-      <div class="md:hidden flex items-center gap-2">
-        <div class="flex items-center justify-center w-7 h-7 rounded bg-primary">
-          <app-icon name="banknote" [size]="16" class="text-white" />
-        </div>
-        <span class="text-base font-bold text-app-fg">CrediFass</span>
-      </div>
+
+      <!-- Nombre de la app (visible en mobile + tablet) -->
+      <span class="text-base font-bold text-app-fg lg:hidden">CrediFass</span>
+
       <div class="flex-1"></div>
-      <!-- Mobile: user avatar -->
-      <div class="md:hidden w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+
+      <!-- Avatar del usuario (siempre visible en topbar) -->
+      <div
+        class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold select-none"
+        [attr.title]="store.usuario()?.nombre">
         {{ (store.usuario()?.nombre ?? 'U')[0].toUpperCase() }}
       </div>
     </header>
 
-    <!-- Page — adds bottom padding on mobile so content isn't under the tab bar -->
-    <main class="flex-1 overflow-auto md:pb-0 pb-16" id="main-content" tabindex="-1">
+    <!-- Contenido de la página -->
+    <!-- pb-16 reserva espacio para el tab bar en phones; lg:pb-0 lo quita en desktop -->
+    <main
+      class="flex-1 overflow-auto pb-16 md:pb-16 lg:pb-0"
+      id="main-content"
+      tabindex="-1">
       <router-outlet />
     </main>
   </div>
 
-  <!-- ── Mobile Bottom Tab Bar (< md) ─────────────────────── -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-app-border flex items-stretch"
-       style="height: 64px;"
-       aria-label="Navegación principal">
+  <!-- ── Tab bar inferior (solo phones < md) ──────────────── -->
+  <nav
+    class="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-app-border flex items-stretch"
+    style="height: 64px;"
+    aria-label="Navegación rápida">
+
     @for (item of mobileNavItems(); track item.path) {
-      <a [routerLink]="item.path"
-         routerLinkActive #rla="routerLinkActive"
-         [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
-         [attr.aria-label]="item.label"
-         [attr.aria-current]="rla.isActive ? 'page' : null"
-         class="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-medium transition-colors"
-         [class.text-primary]="rla.isActive"
-         [class.text-app-muted-fg]="!rla.isActive">
+      <a
+        [routerLink]="item.path"
+        routerLinkActive #rla="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
+        [attr.aria-label]="item.label"
+        [attr.aria-current]="rla.isActive ? 'page' : null"
+        class="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-medium transition-colors cursor-pointer"
+        [class.text-primary]="rla.isActive"
+        [class.text-app-muted-fg]="!rla.isActive">
         <app-icon [name]="item.icon" [size]="22" />
         <span>{{ item.mobileLabel ?? item.label }}</span>
       </a>
     }
-    <!-- Logout tab at end on mobile -->
-    <button type="button"
-            (click)="cerrarSesion()"
-            aria-label="Cerrar sesión"
-            class="flex flex-col items-center justify-center gap-1 px-3 text-[10px] font-medium text-app-muted-fg transition-colors">
-      <app-icon name="log-out" [size]="22" />
-      <span>Salir</span>
+
+    <!-- Botón "Más" → abre el drawer con todos los ítems -->
+    <button
+      type="button"
+      (click)="mobileMenuOpen.set(true)"
+      aria-label="Ver todas las opciones del menú"
+      class="flex flex-col items-center justify-center gap-1 px-3 text-[10px] font-medium text-app-muted-fg hover:text-primary transition-colors cursor-pointer">
+      <app-icon name="menu" [size]="22" />
+      <span>Más</span>
     </button>
   </nav>
 
