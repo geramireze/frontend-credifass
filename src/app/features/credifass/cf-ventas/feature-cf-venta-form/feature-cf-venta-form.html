@@ -88,7 +88,7 @@
         <div>
           <label class="app-label">Tipo de venta *</label>
           <div class="flex gap-3 mt-1">
-            @for (t of [['contado','Contado'], ['cuotas','A cuotas']]; track t[0]) {
+            @for (t of [['contado','Contado'], ['abono','Por abonos'], ['cuotas','A cuotas']]; track t[0]) {
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="radio" formControlName="tipo" [value]="t[0]"
                        class="accent-primary" />
@@ -96,6 +96,9 @@
               </label>
             }
           </div>
+          @if (esAbono()) {
+            <p class="text-xs text-blue-600 mt-1">El cliente paga libremente hasta saldar el total. Se registran abonos desde el detalle de la venta.</p>
+          }
         </div>
 
         <!-- Notas -->

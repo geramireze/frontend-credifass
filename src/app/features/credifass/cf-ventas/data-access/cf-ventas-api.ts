@@ -7,9 +7,11 @@ import type {
   CfVentasFiltros,
   CrearVentaDto,
   RegistrarPagoDto,
+  RegistrarAbonoDto,
   SimulacionCuotas,
   CfCuota,
   CfPagoCuota,
+  CfAbonoVenta,
 } from './cf-ventas.model';
 
 @Injectable({ providedIn: 'root' })
@@ -19,7 +21,7 @@ export class CfVentasApi {
 
   simular(totalVenta: string, nCuotas: number, fechaInicio: string, intervalo: string): Promise<SimulacionCuotas> {
     const params = new HttpParams()
-      .set('totalVenta', totalVenta)
+      .set('total', totalVenta)
       .set('nCuotas', nCuotas)
       .set('fechaInicio', fechaInicio)
       .set('intervalo', intervalo);
@@ -80,5 +82,17 @@ export class CfVentasApi {
 
   anular(id: string): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/${id}`));
+  }
+
+  listarAbonos(ventaId: string): Promise<CfAbonoVenta[]> {
+    return firstValueFrom(this.http.get<CfAbonoVenta[]>(`${this.base}/${ventaId}/abonos`));
+  }
+
+  registrarAbono(ventaId: string, dto: RegistrarAbonoDto, idempotencyKey: string): Promise<CfAbonoVenta> {
+    return firstValueFrom(
+      this.http.post<CfAbonoVenta>(`${this.base}/${ventaId}/abonos`, dto, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
+    );
   }
 }

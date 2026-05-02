@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { CfVentasApi } from './cf-ventas-api';
-import type { CfVentasState, CfVentasFiltros, CrearVentaDto, RegistrarPagoDto, IntervaloVenta } from './cf-ventas.model';
+import type { CfVentasState, CfVentasFiltros, CrearVentaDto, RegistrarPagoDto, RegistrarAbonoDto, IntervaloVenta } from './cf-ventas.model';
 
 const inicial: CfVentasState = {
   items: [],
@@ -34,12 +34,17 @@ export const CfVentasStore = signalStore(
     async cargarDetalle(id: string): Promise<void> {
       patchState(store, { loadingDetalle: true, error: null });
       try {
-        const [venta, cuotas, pagos] = await Promise.all([
-          api.obtener(id),
-          api.obtenerCuotas(id),
-          api.obtenerPagos(id),
-        ]);
-        patchState(store, { seleccionado: { ...venta, cuotas, pagos }, loadingDetalle: false });
+        const venta = await api.obtener(id);
+        if (venta.tipo === 'abono') {
+          const abonos = await api.listarAbonos(id);
+          patchState(store, { seleccionado: { ...venta, abonos }, loadingDetalle: false });
+        } else {
+          const [cuotas, pagos] = await Promise.all([
+            api.obtenerCuotas(id),
+            api.obtenerPagos(id),
+          ]);
+          patchState(store, { seleccionado: { ...venta, cuotas, pagos }, loadingDetalle: false });
+        }
       } catch {
         patchState(store, { loadingDetalle: false, error: 'No se pudo cargar la venta.' });
       }
@@ -73,6 +78,12 @@ export const CfVentasStore = signalStore(
       } catch (err: unknown) {
         throw err;
       }
+    },
+
+    async registrarAbono(ventaId: string, dto: RegistrarAbonoDto): Promise<void> {
+      const idempotencyKey = crypto.randomUUID();
+      await api.registrarAbono(ventaId, dto, idempotencyKey);
+      await this.cargarDetalle(ventaId);
     },
 
     limpiarSimulacion(): void {

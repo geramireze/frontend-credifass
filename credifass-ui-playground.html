@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credifass UI Playground</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --c-primary: #3b82f6;
+    --c-sidebar: #1e293b;
+    --c-bg: #f8fafc;
+    --c-sidebar-text: #94a3b8;
+    --c-content-text: #0f172a;
+    --c-border: #e2e8f0;
+    --c-card: #ffffff;
+    --c-header-bg: #f8fafc;
+    --c-muted: #6b7280;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.12);
+    --sidebar-w: 220px;
+    --font: 'Inter', sans-serif;
+    --font-size: 13px;
+    --cell-pad: 10px 12px;
+    --app-bg: #0f1117; --app-panel: #1a1d27; --app-border: #2a2d3e;
+    --app-text: #e2e8f0; --app-muted: #64748b; --app-accent: #3b82f6;
+  }
+  body { background: var(--app-bg); color: var(--app-text); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-bottom: 1px solid var(--app-border); background: var(--app-panel); flex-shrink: 0; }
+  .topbar h1 { font-size: 14px; font-weight: 700; }
+  .topbar small { color: var(--app-muted); font-size: 11px; }
+  .view-sel { background: var(--app-bg); border: 1px solid var(--app-border); border-radius: 6px; color: var(--app-text); padding: 4px 8px; font-size: 12px; outline: none; }
+
+  .main { display: grid; grid-template-columns: 270px 1fr; grid-template-rows: 1fr 160px; height: calc(100vh - 45px); overflow: hidden; }
+  .controls { grid-row: 1 / 3; padding: 14px; overflow-y: auto; border-right: 1px solid var(--app-border); display: flex; flex-direction: column; gap: 16px; }
+  .preview-area { padding: 20px; overflow-y: auto; }
+  .prompt-area { border-top: 1px solid var(--app-border); background: var(--app-panel); padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
+
+  .sec { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--app-muted); padding-bottom: 8px; border-bottom: 1px solid var(--app-border); }
+  label { display: block; font-size: 11px; color: var(--app-muted); margin-bottom: 4px; }
+  input[type=range] { width: 100%; accent-color: var(--app-accent); cursor: pointer; }
+  input[type=color] { width: 100%; height: 30px; border: 1px solid var(--app-border); border-radius: 6px; background: none; cursor: pointer; padding: 2px; }
+  select { width: 100%; background: var(--app-bg); border: 1px solid var(--app-border); border-radius: 6px; color: var(--app-text); padding: 5px 8px; font-size: 12px; outline: none; }
+  .range-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--app-muted); margin-top: 1px; }
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 8px; }
+  .preset-btn { padding: 5px 6px; background: var(--app-bg); border: 1px solid var(--app-border); border-radius: 6px; color: var(--app-text); font-size: 11px; cursor: pointer; transition: border-color .15s; }
+  .preset-btn:hover { border-color: var(--app-accent); }
+  .sw-row { display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; }
+  .sw { width: 30px; height: 16px; background: var(--app-border); border-radius: 8px; position: relative; transition: background .2s; cursor: pointer; flex-shrink: 0; }
+  .sw.on { background: var(--app-accent); }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: white; border-radius: 50%; transition: left .2s; }
+  .sw.on::after { left: 16px; }
+
+  /* ── Simulated App UI (driven by CSS custom properties) ── */
+  .sim { border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); max-width: 860px; margin: 0 auto; display: flex; min-height: 460px; font-family: var(--font); font-size: var(--font-size); background: var(--c-bg); }
+
+  .sim-sidebar { width: var(--sidebar-w); background: var(--c-sidebar); flex-shrink: 0; padding: 14px 0; display: flex; flex-direction: column; }
+  .sim-logo { padding: 0 14px 12px; font-weight: 700; color: white; font-size: 14px; }
+  .sim-group { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--c-sidebar-text); opacity: .5; padding: 8px 14px 3px; }
+  .sim-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: calc(var(--radius) * 0.7); margin: 1px 6px; color: var(--c-sidebar-text); font-size: calc(var(--font-size) - 1px); cursor: default; transition: background .15s; }
+  .sim-item.active { background: color-mix(in srgb, var(--c-primary) 18%, transparent); color: var(--c-primary); font-weight: 600; }
+  .sim-item .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .sim-content { flex: 1; padding: 18px; color: var(--c-content-text); overflow: hidden; }
+  .sim-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sim-title { font-size: calc(var(--font-size) + 6px); font-weight: 700; color: var(--c-content-text); }
+  .sim-btn-primary { background: var(--c-primary); color: white; border: none; border-radius: var(--radius); padding: 7px 14px; font-size: calc(var(--font-size) - 1px); font-weight: 600; cursor: default; }
+  .sim-btn-ghost { background: var(--c-card); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 6px 12px; font-size: 11px; color: var(--c-content-text); cursor: default; }
+  .sim-search { height: 32px; border-radius: var(--radius); border: 1px solid var(--c-border); background: var(--c-card); display: flex; align-items: center; padding: 0 10px; font-size: 11px; color: var(--c-muted); flex: 1; }
+  .sim-filters { display: flex; gap: 8px; margin-bottom: 12px; }
+  .sim-select-fake { height: 32px; border-radius: var(--radius); border: 1px solid var(--c-border); background: var(--c-card); width: 130px; }
+
+  .sim-table-wrap { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--c-border); box-shadow: var(--shadow); }
+  .sim-table { width: 100%; border-collapse: collapse; font-size: calc(var(--font-size) - 1px); }
+  .sim-table thead { background: var(--c-header-bg); }
+  .sim-table th { padding: var(--cell-pad); text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--c-muted); }
+  .sim-table td { padding: var(--cell-pad); color: var(--c-content-text); border-top: 1px solid var(--c-border); background: var(--c-card); }
+  .sim-badge { display: inline-flex; padding: 2px 7px; border-radius: 9999px; font-size: 10px; font-weight: 600; }
+  .b-green { background: #dcfce7; color: #15803d; }
+  .b-red   { background: #fee2e2; color: #dc2626; }
+  .b-amber { background: #fef3c7; color: #b45309; }
+  .b-blue  { background: #dbeafe; color: #1d4ed8; }
+  .b-purple{ background: #f3e8ff; color: #7e22ce; }
+  .b-gray  { background: #f1f5f9; color: #475569; }
+  .action-edit { color: var(--c-primary); background: color-mix(in srgb, var(--c-primary) 10%, transparent); border-radius: calc(var(--radius) * 0.5); padding: 2px 7px; font-size: 11px; font-weight: 500; cursor: default; }
+  .action-del  { color: #dc2626; background: rgba(220,38,38,.09); border-radius: calc(var(--radius) * 0.5); padding: 2px 7px; font-size: 11px; font-weight: 500; cursor: default; }
+  .sim-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+  .sim-kpi { border-radius: var(--radius); border: 1px solid var(--c-border); background: var(--c-card); padding: 12px; text-align: center; box-shadow: var(--shadow); }
+  .kpi-val { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: var(--c-content-text); }
+  .kpi-lbl { font-size: 10px; color: var(--c-muted); }
+  .sim-tabs { display: flex; gap: 5px; margin-bottom: 12px; }
+  .tab { padding: 4px 11px; border-radius: 9999px; font-size: 11px; font-weight: 500; cursor: default; border: 1px solid var(--c-border); background: var(--c-card); color: var(--c-muted); }
+  .tab.active { background: var(--c-primary); border-color: var(--c-primary); color: white; font-weight: 700; }
+  .sim-card-form { border-radius: var(--radius); border: 1px solid var(--c-border); background: var(--c-card); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .form-sec-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--c-muted); margin-bottom: 10px; }
+  .fake-input { height: 32px; border-radius: var(--radius); border: 1px solid var(--c-border); background: var(--c-header-bg); }
+  .sim-radio-row { display: flex; gap: 8px; }
+  .sim-radio { padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--c-border); font-size: 12px; color: var(--c-muted); cursor: default; }
+  .sim-radio.sel { border-color: var(--c-primary); color: var(--c-primary); font-weight: 600; background: color-mix(in srgb, var(--c-primary) 8%, transparent); }
+  .total-row { display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--c-border); margin-top: 10px; }
+  .total-val { font-size: 20px; font-weight: 700; color: var(--c-content-text); }
+  .total-lbl { font-size: 10px; color: var(--c-muted); text-align: right; }
+  .btns-row { display: flex; gap: 8px; margin-top: 12px; }
+  .sim-btn-sec { background: var(--c-card); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 7px 14px; font-size: calc(var(--font-size) - 1px); color: var(--c-content-text); cursor: default; }
+
+  /* Prompt */
+  .prompt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--app-muted); }
+  .prompt-row { display: flex; gap: 10px; align-items: flex-start; }
+  #prompt-out { font-size: 12px; line-height: 1.6; background: var(--app-bg); border: 1px solid var(--app-border); border-radius: 6px; padding: 8px 12px; flex: 1; font-family: monospace; white-space: pre-wrap; color: var(--app-text); min-height: 56px; }
+  .copy-btn { padding: 6px 14px; background: var(--app-accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; transition: opacity .15s; }
+  .copy-btn:hover { opacity: .85; }
+
+  /* Views */
+  #view-inventario, #view-ventas, #view-reporte { display: none; }
+  body[data-view='inventario'] #view-inventario { display: block; }
+  body[data-view='ventas']     #view-ventas     { display: block; }
+  body[data-view='reporte']    #view-reporte    { display: block; }
+</style>
+</head>
+<body data-view="inventario">
+
+<div class="topbar">
+  <div>
+    <h1>Credifass — UI Playground</h1>
+    <small>Ajusta controles → copia el prompt → pégalo en Claude</small>
+  </div>
+  <select class="view-sel" onchange="setView(this.value)">
+    <option value="inventario">Vista: Inventario</option>
+    <option value="ventas">Vista: Nueva venta</option>
+    <option value="reporte">Vista: Reporte créditos</option>
+  </select>
+</div>
+
+<div class="main">
+  <!-- Controls panel -->
+  <div class="controls">
+
+    <div>
+      <div class="sec">Presets</div>
+      <div class="presets">
+        <button class="preset-btn" onclick="applyPreset('light')">☀ Claro limpio</button>
+        <button class="preset-btn" onclick="applyPreset('dark')">🌙 Oscuro moderno</button>
+        <button class="preset-btn" onclick="applyPreset('earth')">🌿 Tierra cálida</button>
+        <button class="preset-btn" onclick="applyPreset('green')">💚 Verde fresco</button>
+        <button class="preset-btn" onclick="applyPreset('corp')">🏢 Corporativo</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Colores</div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:8px">
+        <div><label>Color primario</label><input type="color" id="cp" value="#3b82f6" oninput="setCss('--c-primary',this.value);syncActive();update()"></div>
+        <div><label>Fondo sidebar</label><input type="color" id="cs" value="#1e293b" oninput="setCss('--c-sidebar',this.value);update()"></div>
+        <div><label>Fondo contenido</label><input type="color" id="cb" value="#f8fafc" oninput="setCss('--c-bg',this.value);autoDerive();update()"></div>
+        <div><label>Texto sidebar</label><input type="color" id="cst" value="#94a3b8" oninput="setCss('--c-sidebar-text',this.value);update()"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Tipografía</div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label>Fuente</label>
+          <select onchange="setCss('--font',this.value);update()">
+            <option value="'Inter',sans-serif">Inter</option>
+            <option value="'DM Sans',sans-serif">DM Sans</option>
+            <option value="'Outfit',sans-serif">Outfit</option>
+            <option value="'Plus Jakarta Sans',sans-serif">Plus Jakarta Sans</option>
+            <option value="'IBM Plex Sans',sans-serif">IBM Plex Sans</option>
+            <option value="system-ui,sans-serif">System UI</option>
+          </select>
+        </div>
+        <div>
+          <label>Tamaño base</label>
+          <input type="range" id="fs" min="12" max="16" value="13" step="1"
+                 oninput="state.fontSize=+this.value;setCss('--font-size',this.value+'px');update()">
+          <div class="range-row"><span>12px</span><span id="fs-v">13px</span><span>16px</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Forma y sombras</div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label>Radio de bordes</label>
+          <input type="range" id="rad" min="0" max="20" value="10" step="2"
+                 oninput="state.radius=+this.value;setCss('--radius',this.value+'px');update()">
+          <div class="range-row"><span>0</span><span id="rad-v">10px</span><span>20px</span></div>
+        </div>
+        <div>
+          <label>Intensidad sombra</label>
+          <input type="range" id="sh" min="0" max="3" value="1" step="1"
+                 oninput="state.shadow=+this.value;applyShadow();update()">
+          <div class="range-row"><span>Ninguna</span><span id="sh-v">Suave</span><span>Fuerte</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Sidebar</div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label>Ancho sidebar</label>
+          <input type="range" id="sw-w" min="160" max="280" value="220" step="10"
+                 oninput="state.sidebarW=+this.value;setCss('--sidebar-w',this.value+'px');update()">
+          <div class="range-row"><span>160px</span><span id="sww-v">220px</span><span>280px</span></div>
+        </div>
+        <label class="sw-row">
+          <div class="sw on" id="sw-labels" onclick="toggleSw('swLabels','sw-labels')"></div>
+          Mostrar grupo labels
+        </label>
+        <label class="sw-row">
+          <div class="sw" id="sw-icons" onclick="toggleSw('swIcons','sw-icons');toggleCollapsed()"></div>
+          Solo iconos (colapsado)
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Densidad tabla</div>
+      <div style="margin-top:8px">
+        <select onchange="state.density=this.value;applyDensity();update()">
+          <option value="compact">Compacta</option>
+          <option value="normal" selected>Normal</option>
+          <option value="relaxed">Holgada</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Preview area with all 3 views -->
+  <div class="preview-area">
+
+    <!-- View: Inventario -->
+    <div id="view-inventario">
+      <div class="sim">
+        <div class="sim-sidebar">
+          <div class="sim-logo" id="logo-inv">🏬 Credifass</div>
+          <div class="sim-group" id="grp-prestamos">Préstamos</div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Dashboard</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Clientes</span></div>
+          <div class="sim-group" id="grp-credifass">Credifass</div>
+          <div class="sim-item active"><span class="dot"></span><span class="item-lbl">Inventario</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Ventas CF</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Reservas CF</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Reportes CF</span></div>
+        </div>
+        <div class="sim-content">
+          <div class="sim-h">
+            <span class="sim-title">Inventario</span>
+            <button class="sim-btn-primary">+ Nuevo producto</button>
+          </div>
+          <div class="sim-filters">
+            <div class="sim-search">🔍 Buscar producto…</div>
+            <div class="sim-select-fake"></div>
+            <button class="sim-btn-ghost">Buscar</button>
+          </div>
+          <div class="sim-table-wrap">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th><th>Categoría</th><th style="text-align:right">Stock</th><th style="text-align:right">Venta</th><th>Estado</th><th style="text-align:right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Camiseta M</td><td style="color:var(--c-muted)">Ropa</td><td style="text-align:right">12</td><td style="text-align:right;font-weight:600">$ 45.000</td><td><span class="sim-badge b-green">disponible</span></td><td style="text-align:right"><span class="action-edit">Editar</span> <span class="action-del">Inactivar</span></td></tr>
+                <tr><td>Jean slim azul</td><td style="color:var(--c-muted)">Ropa</td><td style="text-align:right">3</td><td style="text-align:right;font-weight:600">$ 120.000</td><td><span class="sim-badge b-green">disponible</span></td><td style="text-align:right"><span class="action-edit">Editar</span> <span class="action-del">Inactivar</span></td></tr>
+                <tr><td>Chaqueta cuero</td><td style="color:var(--c-muted)">Ropa</td><td style="text-align:right">0</td><td style="text-align:right;font-weight:600">$ 280.000</td><td><span class="sim-badge b-red">agotado</span></td><td style="text-align:right"><span class="action-edit">Editar</span></td></tr>
+                <tr><td>Zapatillas Nike</td><td style="color:var(--c-muted)">Calzado</td><td style="text-align:right">8</td><td style="text-align:right;font-weight:600">$ 350.000</td><td><span class="sim-badge b-amber">reservado</span></td><td style="text-align:right"><span class="action-edit">Editar</span> <span class="action-del">Inactivar</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Nueva venta -->
+    <div id="view-ventas">
+      <div class="sim">
+        <div class="sim-sidebar">
+          <div class="sim-logo">🏬 Credifass</div>
+          <div class="sim-group" id="grp-cr2">Credifass</div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Inventario</span></div>
+          <div class="sim-item active"><span class="dot"></span><span class="item-lbl">Ventas CF</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Reservas CF</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Reportes CF</span></div>
+        </div>
+        <div class="sim-content">
+          <div class="sim-h">
+            <span class="sim-title">Nueva venta</span>
+          </div>
+          <div class="sim-card-form">
+            <div class="form-sec-lbl">Datos generales</div>
+            <div class="fake-input" style="margin-bottom:10px"></div>
+            <div class="sim-radio-row">
+              <div class="sim-radio sel">● Contado</div>
+              <div class="sim-radio">○ A cuotas</div>
+            </div>
+          </div>
+          <div class="sim-card-form">
+            <div class="form-sec-lbl">Productos</div>
+            <div style="display:grid;grid-template-columns:1fr 70px 80px;gap:8px;margin-bottom:8px">
+              <div class="fake-input"></div>
+              <div class="fake-input"></div>
+              <div style="display:flex;align-items:center;justify-content:flex-end;font-weight:600;color:var(--c-content-text)">$ 45.000</div>
+            </div>
+            <div class="total-row">
+              <div>
+                <div class="total-lbl">Total venta</div>
+                <div class="total-val">$ 45.000</div>
+              </div>
+            </div>
+          </div>
+          <div class="btns-row">
+            <button class="sim-btn-primary" style="flex:1">Registrar venta</button>
+            <button class="sim-btn-sec" style="flex:1">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Reporte créditos -->
+    <div id="view-reporte">
+      <div class="sim">
+        <div class="sim-sidebar">
+          <div class="sim-logo">🏬 Credifass</div>
+          <div class="sim-group" id="grp-cr3">Credifass</div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Inventario</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Ventas CF</span></div>
+          <div class="sim-item"><span class="dot"></span><span class="item-lbl">Reservas CF</span></div>
+          <div class="sim-item active"><span class="dot"></span><span class="item-lbl">Reportes CF</span></div>
+        </div>
+        <div class="sim-content">
+          <div class="sim-h">
+            <div>
+              <div class="sim-title">Reporte de créditos</div>
+              <div style="font-size:11px;color:var(--c-muted);margin-top:1px">Ventas a cuotas — semanal, quincenal, mensual</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="sim-btn-ghost">Excel</button>
+              <button class="sim-btn-ghost">PDF</button>
+            </div>
+          </div>
+          <div class="sim-tabs">
+            <div class="tab active">Todos</div>
+            <div class="tab">Semanal</div>
+            <div class="tab">Quincenal</div>
+            <div class="tab">Mensual</div>
+          </div>
+          <div class="sim-kpis">
+            <div class="sim-kpi"><div class="kpi-val">4</div><div class="kpi-lbl">Ventas</div></div>
+            <div class="sim-kpi"><div class="kpi-val">$ 1.450.000</div><div class="kpi-lbl">Monto total</div></div>
+            <div class="sim-kpi"><div class="kpi-val" style="color:#d97706">$ 840.000</div><div class="kpi-lbl">Saldo pendiente</div></div>
+            <div class="sim-kpi"><div class="kpi-val" style="color:#16a34a">0</div><div class="kpi-lbl">Cuotas vencidas</div></div>
+          </div>
+          <div class="sim-table-wrap">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th>N° Venta</th><th>Cliente</th><th>Frecuencia</th><th style="text-align:right">Total</th><th style="text-align:right">Saldo</th><th>Cuotas</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="font-family:monospace;font-size:11px">VTA-0041</td><td style="font-weight:500">Carlos Jiménez</td><td><span class="sim-badge b-amber">quincenal</span></td><td style="text-align:right;font-weight:600">$ 280.000</td><td style="text-align:right;color:#d97706;font-weight:600">$ 140.000</td><td style="font-size:11px">3/8</td><td><span class="sim-badge b-blue">activa</span></td></tr>
+                <tr><td style="font-family:monospace;font-size:11px">VTA-0039</td><td style="font-weight:500">María López</td><td><span class="sim-badge b-purple">mensual</span></td><td style="text-align:right;font-weight:600">$ 450.000</td><td style="text-align:right;color:#d97706;font-weight:600">$ 300.000</td><td style="font-size:11px">1/6</td><td><span class="sim-badge b-blue">activa</span></td></tr>
+                <tr><td style="font-family:monospace;font-size:11px">VTA-0035</td><td style="font-weight:500">Juan Pérez</td><td><span class="sim-badge b-amber">quincenal</span></td><td style="text-align:right;font-weight:600">$ 120.000</td><td style="text-align:right;color:#16a34a;font-weight:600">$ 0</td><td style="font-size:11px">4/4</td><td><span class="sim-badge b-green">pagada</span></td></tr>
+                <tr><td style="font-family:monospace;font-size:11px">VTA-0031</td><td style="font-weight:500">Ana Gómez</td><td><span class="sim-badge b-purple">mensual</span></td><td style="text-align:right;font-weight:600">$ 600.000</td><td style="text-align:right;color:#d97706;font-weight:600">$ 400.000</td><td style="font-size:11px">1/4</td><td><span class="sim-badge b-blue">activa</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Prompt output -->
+  <div class="prompt-area">
+    <div class="prompt-lbl">Prompt generado</div>
+    <div class="prompt-row">
+      <div id="prompt-out">Ajusta los controles para generar el prompt…</div>
+      <button class="copy-btn" onclick="copyPrompt()">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const state = {
+    colorPrimary: '#3b82f6', colorSidebar: '#1e293b', colorBg: '#f8fafc',
+    colorSidebarText: '#94a3b8', font: "'Inter',sans-serif", fontSize: 13,
+    radius: 10, shadow: 1, sidebarW: 220, density: 'normal',
+    swLabels: true, swIcons: false, vista: 'inventario',
+  };
+
+  const DEFAULTS = { ...state };
+
+  function setCss(prop, val) {
+    document.documentElement.style.setProperty(prop, val);
+  }
+
+  function applyShadow() {
+    const s = ['none','0 1px 3px rgba(0,0,0,.12)','0 4px 14px rgba(0,0,0,.18)','0 8px 32px rgba(0,0,0,.26)'];
+    setCss('--shadow', s[state.shadow] || s[1]);
+  }
+
+  function applyDensity() {
+    const p = { compact:'5px 9px', normal:'10px 12px', relaxed:'14px 16px' };
+    setCss('--cell-pad', p[state.density] || p.normal);
+  }
+
+  function autoDerive() {
+    const hex = document.getElementById('cb').value;
+    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    const dark = (0.299*r + 0.587*g + 0.114*b) < 128;
+    setCss('--c-content-text', dark ? '#e2e8f0' : '#0f172a');
+    setCss('--c-border',       dark ? 'rgba(255,255,255,.1)' : '#e2e8f0');
+    setCss('--c-card',         dark ? 'rgba(255,255,255,.06)' : '#ffffff');
+    setCss('--c-header-bg',    dark ? 'rgba(255,255,255,.04)' : '#f8fafc');
+    setCss('--c-muted',        dark ? '#64748b' : '#6b7280');
+  }
+
+  function syncActive() {
+    const p = document.getElementById('cp').value;
+    setCss('--c-primary', p);
+  }
+
+  function setView(v) {
+    state.vista = v;
+    document.body.setAttribute('data-view', v);
+    update();
+  }
+
+  function toggleSw(key, id) {
+    state[key] = !state[key];
+    document.getElementById(id).classList.toggle('on', state[key]);
+    update();
+  }
+
+  function toggleCollapsed() {
+    const collapsed = state.swIcons;
+    document.querySelectorAll('.sim-logo').forEach(el => {
+      el.textContent = collapsed ? '🏬' : '🏬 Credifass';
+    });
+    document.querySelectorAll('.item-lbl').forEach(el => {
+      el.style.display = collapsed ? 'none' : '';
+    });
+    setCss('--sidebar-w', collapsed ? '54px' : state.sidebarW + 'px');
+  }
+
+  function showGroups(show) {
+    document.querySelectorAll('.sim-group').forEach(el => {
+      el.style.display = show ? '' : 'none';
+    });
+  }
+
+  function applyPreset(name) {
+    const P = {
+      light: { cp:'#3b82f6', cs:'#ffffff', cb:'#f1f5f9', cst:'#475569', rad:8, sh:1 },
+      dark:  { cp:'#6366f1', cs:'#0f172a', cb:'#1e293b', cst:'#94a3b8', rad:12, sh:2 },
+      earth: { cp:'#b45309', cs:'#292524', cb:'#fafaf9', cst:'#a8a29e', rad:6, sh:1 },
+      green: { cp:'#16a34a', cs:'#14532d', cb:'#f0fdf4', cst:'#86efac', rad:10, sh:1 },
+      corp:  { cp:'#0369a1', cs:'#0c2340', cb:'#f8fafc', cst:'#7dd3fc', rad:4, sh:0 },
+    };
+    const p = P[name];
+    if (!p) return;
+    document.getElementById('cp').value  = p.cp;
+    document.getElementById('cs').value  = p.cs;
+    document.getElementById('cb').value  = p.cb;
+    document.getElementById('cst').value = p.cst;
+    document.getElementById('rad').value = p.rad;
+    document.getElementById('sh').value  = p.sh;
+    setCss('--c-primary', p.cp);
+    setCss('--c-sidebar', p.cs);
+    setCss('--c-bg', p.cb);
+    setCss('--c-sidebar-text', p.cst);
+    setCss('--radius', p.rad + 'px');
+    state.radius = p.rad;
+    state.shadow = p.sh;
+    applyShadow();
+    autoDerive();
+    update();
+  }
+
+  function update() {
+    document.getElementById('fs-v').textContent  = state.fontSize + 'px';
+    document.getElementById('rad-v').textContent = state.radius + 'px';
+    document.getElementById('sww-v').textContent = state.sidebarW + 'px';
+    const shLabels = ['Ninguna','Suave','Pronunciada','Fuerte'];
+    document.getElementById('sh-v').textContent  = shLabels[state.shadow] || 'Suave';
+
+    showGroups(state.swLabels);
+    updatePrompt();
+  }
+
+  function updatePrompt() {
+    const D = DEFAULTS;
+    const parts = [];
+    const cp  = document.getElementById('cp').value;
+    const cs  = document.getElementById('cs').value;
+    const cb  = document.getElementById('cb').value;
+    const cst = document.getElementById('cst').value;
+    const fontSel = document.querySelector('.controls select');
+    const densitySel = document.querySelectorAll('.controls select')[1];
+
+    if (cp  !== D.colorPrimary)     parts.push(`color primario \`${cp}\``);
+    if (cs  !== D.colorSidebar)     parts.push(`fondo del sidebar \`${cs}\``);
+    if (cb  !== D.colorBg)          parts.push(`fondo del contenido \`${cb}\``);
+    if (cst !== D.colorSidebarText) parts.push(`texto muted sidebar \`${cst}\``);
+    if (fontSel && fontSel.value !== D.font) {
+      const name = fontSel.value.replace(/'/g,'').split(',')[0].trim();
+      parts.push(`fuente "${name}"`);
+    }
+    if (state.fontSize !== D.fontSize)   parts.push(`tamaño de fuente ${state.fontSize}px`);
+    if (state.radius !== D.radius) {
+      const desc = state.radius === 0 ? 'sin redondeo' : `border-radius de ${state.radius}px`;
+      parts.push(desc);
+    }
+    if (state.shadow !== D.shadow) {
+      const sd = ['sin sombra','sombra suave','sombra pronunciada','sombra fuerte'][state.shadow];
+      parts.push(sd);
+    }
+    if (state.sidebarW !== D.sidebarW)   parts.push(`sidebar de ${state.sidebarW}px`);
+    if (state.swIcons)                    parts.push('sidebar colapsado (solo iconos)');
+    if (!state.swLabels)                  parts.push('sin etiquetas de grupo en el sidebar');
+    if (densitySel && densitySel.value !== D.density) parts.push(`densidad de tabla "${densitySel.value}"`);
+
+    const vistaMap = {
+      inventario: 'la vista de Inventario (tabla de productos con botones Editar e Inactivar)',
+      ventas:     'el formulario de Nueva venta (selección de cliente + líneas de producto)',
+      reporte:    'el reporte de créditos quincenales/mensuales (tabla filtrada por frecuencia)',
+    };
+
+    const el = document.getElementById('prompt-out');
+    if (parts.length === 0) {
+      el.textContent = 'Sin cambios respecto al diseño actual. Ajusta algún control para generar el prompt.';
+    } else {
+      el.textContent = `Actualiza ${vistaMap[state.vista] || 'la vista'} del módulo Credifass (Angular + Tailwind CSS) para usar: ${parts.join(', ')}. Mantén diseño responsivo, badges de estado con colores semánticos (disponible=verde, agotado=rojo, quincenal=ámbar, mensual=morado) y asegura contraste WCAG AA en todos los textos.`;
+    }
+  }
+
+  function copyPrompt() {
+    const text = document.getElementById('prompt-out').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '¡Copiado!';
+      setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
+    });
+  }
+
+  // Init
+  update();
+</script>
+</body>
+</html>

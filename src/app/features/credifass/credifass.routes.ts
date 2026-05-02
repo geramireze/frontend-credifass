@@ -26,6 +26,13 @@ export const CREDIFASS_ROUTES: Routes = [
       ),
   },
   {
+    path: 'productos/:id/editar',
+    loadComponent: () =>
+      import('./cf-productos/feature-cf-producto-form/feature-cf-producto-form').then(
+        (m) => m.FeatureCfProductoForm,
+      ),
+  },
+  {
     path: 'clientes',
     loadComponent: () =>
       import('./cf-clientes/feature-cf-clientes/feature-cf-clientes').then(
@@ -79,6 +86,13 @@ export const CREDIFASS_ROUTES: Routes = [
     loadComponent: () =>
       import('./cf-reservas/feature-cf-reserva-form/feature-cf-reserva-form').then(
         (m) => m.FeatureCfReservaForm,
+      ),
+  },
+  {
+    path: 'reportes',
+    loadComponent: () =>
+      import('./cf-reportes/feature-cf-reporte-ventas/feature-cf-reporte-ventas').then(
+        (m) => m.FeatureCfReporteVentas,
       ),
   },
 ];

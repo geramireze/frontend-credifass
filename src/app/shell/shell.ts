@@ -32,10 +32,10 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const CF_NAV_ITEMS: NavItem[] = [
-  { path: '/credifass/clientes',  icon: 'users',         label: 'CF Clientes',  mobileLabel: 'CF Cli.' },
   { path: '/credifass/productos', icon: 'package',       label: 'Inventario',   mobileLabel: 'Invent.', roles: ['admin', 'supervisor'] },
   { path: '/credifass/ventas',    icon: 'shopping-cart', label: 'Ventas CF',    mobileLabel: 'Ventas' },
   { path: '/credifass/reservas',  icon: 'bookmark',      label: 'Reservas CF',  mobileLabel: 'Reservas' },
+  { path: '/credifass/reportes',  icon: 'bar-chart-2',   label: 'Reportes CF',  mobileLabel: 'Rpt.CF', roles: ['admin', 'supervisor'] },
 ];
 
 @Component({

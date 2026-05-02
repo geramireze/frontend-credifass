@@ -73,6 +73,7 @@ export class FeatureCfVentaForm implements OnInit {
     { initialValue: 'contado' as string },
   );
   protected readonly esCuotas = computed(() => this.tipoSignal() === 'cuotas');
+  protected readonly esAbono  = computed(() => this.tipoSignal() === 'abono');
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -187,7 +188,7 @@ export class FeatureCfVentaForm implements OnInit {
     try {
       const ventaId = await this.store.crear({
         clienteId: v.clienteId!,
-        tipo:      v.tipo as 'contado' | 'cuotas',
+        tipo:      v.tipo as 'contado' | 'cuotas' | 'abono',
         reservaId: v.reservaId || undefined,
         notas:     v.notas || undefined,
         lineas: this.lineas.controls.map((_, i) => ({

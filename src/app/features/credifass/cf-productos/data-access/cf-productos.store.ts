@@ -50,10 +50,37 @@ export const CfProductosStore = signalStore(
       }
     },
 
-    async ajustarStock(id: string, nuevoStock: number, notas?: string): Promise<void> {
+    async editar(
+      id: string,
+      dto: { nombre?: string; descripcion?: string; stockMinimo?: number },
+      precios?: { valorCompra: string; valorVenta: string },
+    ): Promise<void> {
       patchState(store, { loading: true, error: null });
       try {
-        await api.ajustarStock(id, nuevoStock, notas);
+        await api.actualizar(id, dto);
+        if (precios) await api.actualizarPrecios(id, precios.valorCompra, precios.valorVenta);
+        await this.cargarLista();
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
+      }
+    },
+
+    async ajustarStock(id: string, cantidad: number, motivo: string): Promise<void> {
+      patchState(store, { loading: true, error: null });
+      try {
+        await api.ajustarStock(id, cantidad, motivo);
+        await this.cargarLista();
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
+      }
+    },
+
+    async inactivar(id: string): Promise<void> {
+      patchState(store, { loading: true, error: null });
+      try {
+        await api.inactivar(id);
         await this.cargarLista();
       } catch (err: unknown) {
         patchState(store, { loading: false });

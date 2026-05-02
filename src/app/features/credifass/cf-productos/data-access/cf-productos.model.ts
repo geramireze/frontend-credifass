@@ -10,6 +10,7 @@ export interface CfProducto {
   valorVenta: string;
   stockDisponible: number;
   stockReservado: number;
+  stockMinimo: number;
   estado: EstadoProducto;
   activo: boolean;
 }

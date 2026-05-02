@@ -7,7 +7,7 @@
   </a>
 
   <div class="page-header">
-    <h1 class="page-title">Nuevo producto</h1>
+    <h1 class="page-title">{{ modoEdicion() ? 'Editar producto' : 'Nuevo producto' }}</h1>
   </div>
 
   @if (error()) {
@@ -44,7 +44,7 @@
           </select>
         </div>
 
-        <!-- Valor compra -->
+        <!-- Valor de compra -->
         <div>
           <label class="app-label" for="vc">Valor de compra (COP) *</label>
           <input id="vc" type="number" min="0" formControlName="valorCompra" class="app-input"
@@ -55,7 +55,7 @@
           }
         </div>
 
-        <!-- Valor venta -->
+        <!-- Valor de venta -->
         <div>
           <label class="app-label" for="vv">Valor de venta (COP) *</label>
           <input id="vv" type="number" min="0" formControlName="valorVenta" class="app-input"
@@ -66,12 +66,21 @@
           }
         </div>
 
-        <!-- Stock inicial -->
+        <!-- Stock mínimo -->
         <div>
-          <label class="app-label" for="stock">Stock inicial</label>
-          <input id="stock" type="number" min="0" formControlName="stockInicial" class="app-input" />
-          <p class="text-xs text-gray-500 mt-1">Unidades que ingresan al inventario hoy</p>
+          <label class="app-label" for="stmin">Stock mínimo</label>
+          <input id="stmin" type="number" min="0" formControlName="stockMinimo" class="app-input" />
+          <p class="text-xs text-gray-500 mt-1">Alerta de stock bajo</p>
         </div>
+
+        <!-- Stock inicial solo en creación -->
+        @if (!modoEdicion()) {
+          <div>
+            <label class="app-label" for="stock">Stock inicial</label>
+            <input id="stock" type="number" min="0" formControlName="stockInicial" class="app-input" />
+            <p class="text-xs text-gray-500 mt-1">Unidades que ingresan al inventario hoy</p>
+          </div>
+        }
 
         <!-- Descripción -->
         <div class="sm:col-span-2">
@@ -85,7 +94,7 @@
       <div class="flex gap-3 pt-2">
         <button type="submit" [disabled]="guardando()"
                 class="btn-primary flex-1 sm:flex-none disabled:opacity-50">
-          {{ guardando() ? 'Guardando…' : 'Crear producto' }}
+          {{ guardando() ? 'Guardando…' : (modoEdicion() ? 'Guardar cambios' : 'Crear producto') }}
         </button>
         <a routerLink="/credifass/productos" class="btn-secondary flex-1 sm:flex-none text-center">
           Cancelar

@@ -14,8 +14,10 @@ import type { EstadoProducto } from '../data-access/cf-productos.model';
 export class FeatureCfProductos implements OnInit {
   protected readonly store = inject(CfProductosStore);
 
-  protected busqueda = signal('');
+  protected busqueda    = signal('');
   protected estadoFiltro = signal<EstadoProducto | ''>('');
+  protected confirmInactivarId = signal<string | null>(null);
+  protected errorAccion = signal<string | null>(null);
 
   ngOnInit(): void {
     this.store.cargarLista();
@@ -33,5 +35,27 @@ export class FeatureCfProductos implements OnInit {
       inactivo:   'bg-gray-100 text-gray-500',
     };
     return map[estado] ?? 'bg-gray-100 text-gray-500';
+  }
+
+  pedirConfirmacionInactivar(id: string): void {
+    this.errorAccion.set(null);
+    this.confirmInactivarId.set(id);
+  }
+
+  cancelarConfirmacion(): void {
+    this.confirmInactivarId.set(null);
+  }
+
+  async confirmarInactivar(): Promise<void> {
+    const id = this.confirmInactivarId();
+    if (!id) return;
+    this.confirmInactivarId.set(null);
+    this.errorAccion.set(null);
+    try {
+      await this.store.inactivar(id);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'No se pudo inactivar el producto.';
+      this.errorAccion.set(msg);
+    }
   }
 }

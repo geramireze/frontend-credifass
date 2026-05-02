@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { CopPipe } from '../../../../shared/pipes/cop-pipe';
 import { CfVentasStore } from '../data-access/cf-ventas.store';
-import type { CfCuota, MedioPago } from '../data-access/cf-ventas.model';
+import type { CfCuota, MedioPago, RegistrarAbonoDto } from '../data-access/cf-ventas.model';
 
 @Component({
   selector: 'app-feature-cf-venta-detalle',
@@ -13,6 +13,7 @@ import type { CfCuota, MedioPago } from '../data-access/cf-ventas.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeatureCfVentaDetalle implements OnInit {
+  protected readonly Number = Number;
   protected readonly store = inject(CfVentasStore);
   private readonly route = inject(ActivatedRoute);
 
@@ -78,5 +79,39 @@ export class FeatureCfVentaDetalle implements OnInit {
       parcial:   'bg-blue-100 text-blue-800',
     };
     return map[estado] ?? 'bg-gray-100 text-gray-500';
+  }
+
+  // ── Abonos ────────────────────────────────────────────────────────────────
+  protected montoAbono    = signal('');
+  protected medioPagoAbono = signal<MedioPago>('efectivo');
+  protected notaAbono     = signal('');
+  protected guardandoAbono = signal(false);
+  protected errorAbono    = signal<string | null>(null);
+  protected exitoAbono    = signal(false);
+
+  async registrarAbono(): Promise<void> {
+    const venta = this.store.seleccionado();
+    const monto = this.montoAbono().trim();
+    if (!venta || !monto) return;
+
+    this.guardandoAbono.set(true);
+    this.errorAbono.set(null);
+    this.exitoAbono.set(false);
+
+    try {
+      const dto: RegistrarAbonoDto = {
+        monto,
+        medioPago: this.medioPagoAbono(),
+        nota: this.notaAbono() || undefined,
+      };
+      await this.store.registrarAbono(venta.id, dto);
+      this.exitoAbono.set(true);
+      this.montoAbono.set('');
+      this.notaAbono.set('');
+    } catch (err: unknown) {
+      this.errorAbono.set(err instanceof Error ? err.message : 'Error al registrar el abono.');
+    } finally {
+      this.guardandoAbono.set(false);
+    }
   }
 }

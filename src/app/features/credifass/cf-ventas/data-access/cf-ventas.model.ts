@@ -1,4 +1,4 @@
-export type TipoVenta = 'contado' | 'cuotas';
+export type TipoVenta = 'contado' | 'cuotas' | 'abono';
 export type EstadoVenta = 'activa' | 'pagada' | 'anulada';
 export type IntervaloVenta = 'semanal' | 'quincenal' | 'mensual';
 export type MedioPago = 'efectivo' | 'transferencia' | 'nequi' | 'daviplata' | 'otro';
@@ -40,6 +40,17 @@ export interface CfPagoCuota {
   idempotencyKey: string | null;
 }
 
+export interface CfAbonoVenta {
+  id: string;
+  ventaId: string;
+  monto: string;
+  fechaAbono: string;
+  medioPago: MedioPago;
+  nota: string | null;
+  anulado: boolean;
+  createdAt: string;
+}
+
 export interface CfVenta {
   id: string;
   numeroVenta: string;
@@ -57,6 +68,7 @@ export interface CfVenta {
   intervalo: IntervaloVenta | null;
   cuotas?: CfCuota[];
   pagos?: CfPagoCuota[];
+  abonos?: CfAbonoVenta[];
 }
 
 export interface CfVentasFiltros {
@@ -97,4 +109,11 @@ export interface RegistrarPagoDto {
   monto: string;
   medioPago: MedioPago;
   idempotencyKey: string;
+}
+
+export interface RegistrarAbonoDto {
+  monto: string;
+  medioPago: MedioPago;
+  nota?: string;
+  fechaAbono?: string;
 }

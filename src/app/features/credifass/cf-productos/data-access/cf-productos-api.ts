@@ -32,8 +32,12 @@ export class CfProductosApi {
     return firstValueFrom(this.http.patch<CfProducto>(`${this.base}/${id}/precios`, { valorCompra, valorVenta }));
   }
 
-  ajustarStock(id: string, nuevoStock: number, notas?: string): Promise<CfProducto> {
-    return firstValueFrom(this.http.patch<CfProducto>(`${this.base}/${id}/stock`, { nuevoStock, notas }));
+  actualizar(id: string, dto: { nombre?: string; descripcion?: string; stockMinimo?: number }): Promise<CfProducto> {
+    return firstValueFrom(this.http.patch<CfProducto>(`${this.base}/${id}`, dto));
+  }
+
+  ajustarStock(id: string, cantidad: number, motivo: string): Promise<CfProducto> {
+    return firstValueFrom(this.http.patch<CfProducto>(`${this.base}/${id}/stock`, { cantidad, motivo }));
   }
 
   inactivar(id: string): Promise<void> {
