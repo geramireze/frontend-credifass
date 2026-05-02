@@ -63,8 +63,10 @@ export interface CrearPrestamoDto {
 
 export interface EditarPrestamoDto {
   fechaInicio?: string;
+  frecuenciaPago?: FrecuenciaPago;
   cobradorId?: string;
   moraActiva?: boolean;
+  ajustarDefecto?: boolean;
   observaciones?: string;
 }
 

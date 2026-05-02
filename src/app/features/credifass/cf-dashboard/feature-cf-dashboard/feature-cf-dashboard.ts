@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { CopPipe } from '../../../../shared/pipes/cop-pipe';
+import { AppIconComponent } from '../../../../shared/components/icon/icon';
 import { CfDashboardStore } from '../data-access/cf-dashboard.store';
 
 @Component({
   selector: 'app-feature-cf-dashboard',
-  imports: [CopPipe, DatePipe],
+  imports: [CopPipe, DatePipe, AppIconComponent],
   templateUrl: './feature-cf-dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

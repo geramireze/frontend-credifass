@@ -7,15 +7,17 @@ export interface VentaCuotaRow {
   id: string;
   numero_venta: string;
   cliente: string;
+  tipo: 'cuotas' | 'abono';
   estado: string;
   fecha_venta: string;
   subtotal_venta: string;
   saldo_pendiente: string;
-  n_cuotas: number;
-  intervalo: 'semanal' | 'quincenal' | 'mensual' | null;
+  n_cuotas: number | null;
+  intervalo: 'semanal' | 'quincenal' | 'mensual' | 'abono' | null;
   cuotas_pagadas: number;
   cuotas_vencidas: number;
   cuotas_pendientes: number;
+  abonos_registrados: number;
 }
 
 export interface FiltrosReporteVentas {

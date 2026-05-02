@@ -235,7 +235,7 @@
                 class="flex flex-col gap-5 p-6 flex-1">
 
             <div class="rounded-lg bg-primary-light/30 border border-primary/20 px-4 py-3">
-              <p class="text-xs text-primary font-medium">Puedes ajustar la fecha de inicio, el cobrador, la mora y las observaciones. Para cambiar montos usa <strong>Refinanciar</strong>.</p>
+              <p class="text-xs text-primary font-medium">Ajusta fecha de inicio, modalidad de pago, cobrador o mora. Para cambiar montos usa <strong>Refinanciar</strong>.</p>
             </div>
 
             @if (errorEdicion()) {
@@ -259,7 +259,7 @@
                      [max]="maxFecha"
                      (change)="onFechaInicioChange($event)" />
               <p class="text-xs text-app-muted-fg">
-                Recalcula las fechas de todas las cuotas ({{ p.frecuencia_pago === 'quincenal' ? 'cada 14 días – quincenal' : 'cada 7 días – semanal' }}).
+                Recalcula las fechas de todas las cuotas ({{ frecuenciaEdicion() === 'quincenal' ? 'cada 14 días – quincenal' : 'cada 7 días – semanal' }}).
               </p>
               @if (previewEdicion(); as pv) {
                 <div class="mt-2 rounded-md bg-primary-light/30 border border-primary/20 px-3 py-2 text-xs text-primary space-y-0.5">
@@ -268,6 +268,61 @@
                 </div>
               }
             </div>
+
+            <!-- Modalidad de pago -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <p class="app-label">Modalidad de pago</p>
+                @if (cuotasPagadas() > 0) {
+                  <span class="text-[10px] text-amber-600 font-medium">Bloqueado (hay cuotas pagadas)</span>
+                }
+              </div>
+              <div class="flex gap-3" role="radiogroup" aria-label="Modalidad de pago"
+                   [attr.aria-disabled]="cuotasPagadas() > 0">
+
+                @for (opt of [{val:'semanal',label:'Semanal',sub:'6 cuotas · c/7d',icon:'calendar'},{val:'quincenal',label:'Quincenal',sub:'3 cuotas · c/14d',icon:'calendar-days'}]; track opt.val) {
+                  <label class="flex-1"
+                         [class.cursor-pointer]="cuotasPagadas() === 0"
+                         [class.cursor-not-allowed]="cuotasPagadas() > 0"
+                         [class.opacity-50]="cuotasPagadas() > 0">
+                    <input type="radio" formControlName="frecuencia_pago" [value]="opt.val"
+                           class="sr-only"
+                           [attr.disabled]="cuotasPagadas() > 0 || null"
+                           (change)="cuotasPagadas() === 0 && onFrecuenciaPagoChange($any(opt.val))" />
+                    <div class="flex items-center gap-2 rounded-lg border-2 p-3 transition-all"
+                         [class.border-primary]="frecuenciaEdicion() === opt.val"
+                         [class.bg-primary-light]="frecuenciaEdicion() === opt.val"
+                         [class.border-app-border]="frecuenciaEdicion() !== opt.val"
+                         [class.bg-white]="frecuenciaEdicion() !== opt.val">
+                      <app-icon [name]="opt.icon" [size]="15"
+                                [class.text-primary]="frecuenciaEdicion() === opt.val"
+                                [class.text-app-muted-fg]="frecuenciaEdicion() !== opt.val" />
+                      <div>
+                        <p class="text-xs font-semibold leading-tight"
+                           [class.text-primary]="frecuenciaEdicion() === opt.val"
+                           [class.text-app-fg]="frecuenciaEdicion() !== opt.val">{{ opt.label }}</p>
+                        <p class="text-[10px] text-app-muted-fg">{{ opt.sub }}</p>
+                      </div>
+                    </div>
+                  </label>
+                }
+              </div>
+            </div>
+
+            <!-- Ajuste datos legacy (solo si datos incompletos) -->
+            @if (esDataLegacy()) {
+              <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                <div class="flex items-start gap-2 mb-2">
+                  <app-icon name="alert-triangle" [size]="14" class="text-amber-600 mt-0.5 shrink-0" />
+                  <p class="text-xs font-medium text-amber-800">Este préstamo tiene datos incompletos (tasa 0% o sin cuota). Puedes ajustar a los valores estándar.</p>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" formControlName="ajustar_defecto"
+                         class="w-4 h-4 rounded border-amber-300 accent-amber-600" />
+                  <span class="text-xs font-semibold text-amber-800">Ajustar a 6 cuotas al 20% (datos estándar)</span>
+                </label>
+              </div>
+            }
 
             <!-- Cobrador -->
             <div class="flex flex-col gap-1">

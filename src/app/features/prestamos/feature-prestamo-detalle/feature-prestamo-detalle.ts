@@ -7,7 +7,7 @@ import { PrestamosApiService } from '../data-access/prestamos-api';
 import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
-import { EstadoPrestamo, CuotaPrestamo, PrestamoListItem } from '../data-access/prestamos.model';
+import { EstadoPrestamo, CuotaPrestamo, PrestamoListItem, FrecuenciaPago } from '../data-access/prestamos.model';
 import { UsuariosApiService } from '../../usuarios/data-access/usuarios-api';
 import { UsuarioListItem } from '../../usuarios/data-access/usuarios.model';
 
@@ -62,6 +62,12 @@ export class FeaturePrestamoDetalle implements OnInit {
   protected readonly guardandoEdicion = signal(false);
   protected readonly errorEdicion = signal<string | null>(null);
   protected readonly previewEdicion = signal<{ primera: string; ultima: string } | null>(null);
+  protected readonly frecuenciaEdicion = signal<FrecuenciaPago>('semanal');
+  protected readonly esDataLegacy = signal(false);
+
+  protected readonly cuotasPagadas = computed(() =>
+    this.store.cuotas().filter(c => c.estado === 'pagada').length,
+  );
 
   protected readonly puedeEditar = computed(() => {
     const u = this.authStore.usuario();
@@ -85,10 +91,12 @@ export class FeaturePrestamoDetalle implements OnInit {
   );
 
   protected readonly formEditar = this.fb.group({
-    fecha_inicio:  [''],
-    cobrador_id:   [''],
-    mora_activa:   [false],
-    observaciones: [''],
+    fecha_inicio:    [''],
+    frecuencia_pago: ['semanal' as FrecuenciaPago],
+    cobrador_id:     [''],
+    mora_activa:     [false],
+    ajustar_defecto: [false],
+    observaciones:   [''],
   });
 
   ngOnInit(): void {
@@ -116,28 +124,47 @@ export class FeaturePrestamoDetalle implements OnInit {
 
   protected abrirEditar(p: PrestamoListItem): void {
     const fechaActual = p.fecha_inicio.split('T')[0];
+    const frecuencia = p.frecuencia_pago ?? 'semanal';
     this.formEditar.reset({
-      fecha_inicio:  fechaActual,
-      cobrador_id:   p.cobrador_id ?? '',
-      mora_activa:   false,
-      observaciones: '',
+      fecha_inicio:    fechaActual,
+      frecuencia_pago: frecuencia,
+      cobrador_id:     p.cobrador_id ?? '',
+      mora_activa:     false,
+      ajustar_defecto: false,
+      observaciones:   '',
     });
+    this.frecuenciaEdicion.set(frecuencia);
+    this.esDataLegacy.set(p.monto_total === 0 || p.cuota_semanal === 0);
     this.previewEdicion.set(null);
     this.errorEdicion.set(null);
+
+    const frecCtrl = this.formEditar.get('frecuencia_pago');
+    if (this.cuotasPagadas() > 0) {
+      frecCtrl?.disable();
+    } else {
+      frecCtrl?.enable();
+    }
+
     this.mostrarPanelEditar.set(true);
-    this.actualizarPreviewFechas(fechaActual, p);
+    this.actualizarPreviewFechas(fechaActual, frecuencia, this.cuotasPorFrecuencia(frecuencia));
   }
 
-  private async actualizarPreviewFechas(fecha: string, p: PrestamoListItem): Promise<void> {
+  private async actualizarPreviewFechas(
+    fecha: string,
+    frecuencia: FrecuenciaPago,
+    numSemanas: number,
+  ): Promise<void> {
     if (!fecha) return;
+    const p = this.store.seleccionado();
+    if (!p) return;
     try {
       const sim = await this.api.simular({
-        montoPrestado:  p.monto_prestado,
+        montoPrestado:  p.monto_prestado || 1,
         tasaSemanal:    0,
-        numeroSemanas:  p.numero_semanas,
+        numeroSemanas:  numSemanas || 6,
         modoInteres:    'simple',
         fechaInicio:    fecha,
-        frecuenciaPago: p.frecuencia_pago,
+        frecuenciaPago: frecuencia,
       });
       const cron = sim.cronograma;
       if (cron?.length) {
@@ -151,10 +178,19 @@ export class FeaturePrestamoDetalle implements OnInit {
     }
   }
 
+  private cuotasPorFrecuencia(f: FrecuenciaPago): number {
+    return f === 'quincenal' ? 3 : 6;
+  }
+
   protected onFechaInicioChange(event: Event): void {
     const fecha = (event.target as HTMLInputElement).value;
-    const p = this.store.seleccionado();
-    if (p) this.actualizarPreviewFechas(fecha, p);
+    if (fecha) this.actualizarPreviewFechas(fecha, this.frecuenciaEdicion(), this.cuotasPorFrecuencia(this.frecuenciaEdicion()));
+  }
+
+  protected onFrecuenciaPagoChange(valor: FrecuenciaPago): void {
+    this.frecuenciaEdicion.set(valor);
+    const fecha = this.formEditar.get('fecha_inicio')?.value ?? '';
+    if (fecha) this.actualizarPreviewFechas(fecha, valor, this.cuotasPorFrecuencia(valor));
   }
 
   protected cerrarEditar(): void {
@@ -168,19 +204,49 @@ export class FeaturePrestamoDetalle implements OnInit {
     this.errorEdicion.set(null);
     const v = this.formEditar.getRawValue();
     const original = this.store.seleccionado();
-    const dto: { fechaInicio?: string; cobradorId?: string; moraActiva?: boolean; observaciones?: string } = {};
+    const dto: {
+      fechaInicio?: string;
+      frecuenciaPago?: FrecuenciaPago;
+      cobradorId?: string;
+      moraActiva?: boolean;
+      ajustarDefecto?: boolean;
+      observaciones?: string;
+    } = {};
     const nuevaFecha = v.fecha_inicio?.trim();
     if (nuevaFecha && nuevaFecha !== original?.fecha_inicio?.split('T')[0]) dto.fechaInicio = nuevaFecha;
+
+    // Solo incluir frecuenciaPago si realmente cambió y no hay cuotas pagadas
+    const frecuenciaOriginal = (original?.frecuencia_pago ?? 'semanal') as FrecuenciaPago;
+    const nuevaFrecuencia = v.frecuencia_pago as FrecuenciaPago;
+    const tienePagadas = this.cuotasPagadas() > 0;
+    if (nuevaFrecuencia && nuevaFrecuencia !== frecuenciaOriginal && !tienePagadas) {
+      dto.frecuenciaPago = nuevaFrecuencia;
+    }
+
     if (v.cobrador_id !== null) dto.cobradorId = v.cobrador_id || undefined;
     if (v.mora_activa !== null) dto.moraActiva = v.mora_activa ?? undefined;
+    if (v.ajustar_defecto) dto.ajustarDefecto = true;
     if (v.observaciones) dto.observaciones = v.observaciones;
+
+    const ERRORES: Record<string, string> = {
+      PRESTAMO_YA_CERRADO:         'Este préstamo ya fue pagado o cancelado.',
+      SIN_PERMISO_EDITAR_PRESTAMO: 'No tienes permiso para editar préstamos.',
+      CUOTAS_PAGADAS_NO_AJUSTABLE: 'No se puede cambiar la modalidad cuando ya hay cuotas pagadas.',
+      COBRADOR_INVALIDO:           'El cobrador seleccionado no existe o no está activo.',
+      FECHA_INICIO_PASADA:         'No tienes permiso para usar una fecha anterior a hoy.',
+      FECHA_INICIO_DEMASIADO_FUTURA: 'La fecha no puede superar 30 días en el futuro.',
+    };
+
     try {
       await this.store.editar(id, dto);
       this.cerrarEditar();
     } catch (err: unknown) {
-      const body = (err as { error?: { message?: string | string[] } })?.error;
-      const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
-      this.errorEdicion.set(msg ?? 'No se pudo guardar los cambios.');
+      const body = (err as { error?: { code?: string; message?: string | string[] } })?.error;
+      const code = body?.code;
+      const rawMsg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
+      this.errorEdicion.set(
+        (code ? ERRORES[code] : undefined) ?? rawMsg ?? 'No se pudo guardar los cambios.',
+      );
     } finally {
       this.guardandoEdicion.set(false);
     }

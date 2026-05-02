@@ -5,7 +5,7 @@ import { CopPipe } from '../../../../shared/pipes/cop-pipe';
 import { CfReportesApi } from '../data-access/cf-reportes-api';
 import type { VentaCuotaRow } from '../data-access/cf-reportes-api';
 
-type Intervalo = 'todos' | 'quincenal' | 'mensual' | 'semanal';
+type Intervalo = 'todos' | 'semanal' | 'quincenal' | 'mensual' | 'abono';
 
 @Component({
   selector: 'app-feature-cf-reporte-ventas',
@@ -46,6 +46,7 @@ export class FeatureCfReporteVentas {
     { value: 'semanal',   label: 'Semanal' },
     { value: 'quincenal', label: 'Quincenal' },
     { value: 'mensual',   label: 'Mensual' },
+    { value: 'abono',     label: 'Por abonos' },
   ];
 
   estadoBadge(estado: string): string {
@@ -61,6 +62,7 @@ export class FeatureCfReporteVentas {
       semanal:   'bg-indigo-100 text-indigo-700',
       quincenal: 'bg-amber-100 text-amber-700',
       mensual:   'bg-purple-100 text-purple-700',
+      abono:     'bg-teal-100 text-teal-700',
     }[iv ?? ''] ?? 'bg-gray-100 text-gray-500';
   }
 

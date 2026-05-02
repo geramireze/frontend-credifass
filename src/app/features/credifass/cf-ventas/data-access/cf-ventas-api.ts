@@ -53,7 +53,15 @@ export class CfVentasApi {
   }
 
   obtener(id: string): Promise<CfVenta> {
-    return firstValueFrom(this.http.get<CfVenta>(`${this.base}/${id}`));
+    return firstValueFrom(
+      this.http.get<any>(`${this.base}/${id}`).pipe(
+        map((v) => ({
+          ...v,
+          clienteNombre: v.cliente?.nombre ?? '',
+          numeroVenta: v.numero != null ? String(v.numero) : '',
+        } as CfVenta)),
+      ),
+    );
   }
 
   obtenerCuotas(id: string): Promise<CfCuota[]> {

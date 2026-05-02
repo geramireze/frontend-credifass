@@ -88,7 +88,7 @@
         <div>
           <label class="app-label">Tipo de venta *</label>
           <div class="flex gap-3 mt-1">
-            @for (t of [['contado','Contado'], ['abono','Por abonos'], ['cuotas','A cuotas']]; track t[0]) {
+            @for (t of [['contado','Contado'], ['abono','Por abonos']]; track t[0]) {
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="radio" formControlName="tipo" [value]="t[0]"
                        class="accent-primary" />
@@ -96,9 +96,6 @@
               </label>
             }
           </div>
-          @if (esAbono()) {
-            <p class="text-xs text-blue-600 mt-1">El cliente paga libremente hasta saldar el total. Se registran abonos desde el detalle de la venta.</p>
-          }
         </div>
 
         <!-- Notas -->
@@ -172,56 +169,69 @@
       </div>
     </div>
 
-    <!-- Sección 3: Plan de cuotas (solo si tipo=cuotas) -->
-    @if (esCuotas()) {
-      <div class="card p-6 space-y-4" formGroupName="planCuotas">
-        <h2 class="font-semibold text-gray-700">Plan de cuotas</h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <!-- N° cuotas -->
-          <div>
-            <label class="app-label" for="ncuotas">N° de cuotas *</label>
-            <input id="ncuotas" type="number" min="1" max="52" formControlName="nCuotas"
-                   class="app-input" (change)="simular()" />
-          </div>
-
-          <!-- Fecha inicio -->
-          <div>
-            <label class="app-label" for="finicio">Primera cuota *</label>
-            <input id="finicio" type="date" formControlName="fechaInicio"
-                   class="app-input" (change)="simular()" />
-          </div>
-
-          <!-- Intervalo -->
-          <div>
-            <label class="app-label" for="intervalo">Frecuencia *</label>
-            <select id="intervalo" formControlName="intervalo" class="app-input" (change)="simular()">
-              @for (i of intervalos; track i.value) {
-                <option [value]="i.value">{{ i.label }}</option>
-              }
-            </select>
-          </div>
+    <!-- Sección 3: Abonos iniciales (solo si tipo=abono) -->
+    @if (esAbono()) {
+      <div class="card p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-gray-700">Abonos iniciales</h2>
+          <button type="button" (click)="agregarAbono()"
+                  class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+            <app-icon name="plus" [size]="14" />
+            Agregar abono
+          </button>
         </div>
 
-        <!-- Botón simular -->
-        <button type="button" (click)="simular()" [disabled]="simulando()"
-                class="btn-secondary text-sm disabled:opacity-50">
-          {{ simulando() ? 'Calculando…' : 'Simular cuotas' }}
-        </button>
+        <p class="text-xs text-gray-500">Registra uno o más abonos al crear la venta. Puedes agregar más desde el detalle de la venta.</p>
 
-        <!-- Resultado simulación -->
-        @if (simulacion()) {
-          <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <p class="text-sm font-semibold text-blue-700 mb-2">
-              {{ simulacion()!.cuotas.length }} cuota(s) de aprox. {{ simulacion()!.cuotas[0]?.valor | cop }}
-            </p>
-            <div class="max-h-48 overflow-y-auto space-y-1">
-              @for (c of simulacion()!.cuotas; track c.numero) {
-                <div class="flex justify-between text-xs text-blue-800">
-                  <span>#{{ c.numero }} — {{ c.fechaEsperada | date:'dd/MM/yyyy' }}</span>
-                  <span class="font-semibold tabular-nums">{{ c.valor | cop }}</span>
-                </div>
-              }
+        @if (abonos.length === 0) {
+          <div class="py-4 text-center rounded-lg border border-dashed border-gray-200">
+            <p class="text-sm text-gray-400">Sin abonos. El cliente puede abonar más tarde.</p>
+          </div>
+        }
+
+        <div formArrayName="abonos" class="space-y-3">
+          @for (ab of abonos.controls; track $index) {
+            <div [formGroupName]="$index"
+                 class="flex gap-3 items-end p-3 rounded-lg border border-gray-100 bg-gray-50">
+              <!-- Monto -->
+              <div class="flex-1">
+                <label [for]="'ab-monto-'+$index" class="app-label">Monto *</label>
+                <input [id]="'ab-monto-'+$index" type="number" min="1"
+                       formControlName="monto" class="app-input"
+                       placeholder="0" />
+              </div>
+              <!-- Medio de pago -->
+              <div class="w-36 shrink-0">
+                <label [for]="'ab-medio-'+$index" class="app-label">Medio de pago</label>
+                <select [id]="'ab-medio-'+$index" formControlName="medioPago" class="app-input">
+                  @for (m of mediosPago; track m.value) {
+                    <option [value]="m.value">{{ m.label }}</option>
+                  }
+                </select>
+              </div>
+              <!-- Quitar -->
+              <button type="button" (click)="quitarAbono($index)"
+                      class="mb-1 p-1.5 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                      [attr.aria-label]="'Quitar abono ' + ($index + 1)">
+                <app-icon name="trash-2" [size]="15" />
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (abonos.length > 0) {
+          <div class="flex justify-between items-center border-t border-gray-100 pt-3 text-sm">
+            <div>
+              <span class="text-gray-500">Total abonado: </span>
+              <span class="font-semibold text-primary">{{ totalAbonos() | cop }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Saldo restante: </span>
+              <span class="font-semibold"
+                    [class.text-status-mora]="(totalVenta() - totalAbonos()) > 0"
+                    [class.text-status-success-fg]="(totalVenta() - totalAbonos()) <= 0">
+                {{ (totalVenta() - totalAbonos()) | cop }}
+              </span>
             </div>
           </div>
         }

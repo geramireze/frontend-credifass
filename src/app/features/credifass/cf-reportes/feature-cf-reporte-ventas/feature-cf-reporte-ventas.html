@@ -4,7 +4,7 @@
   <div class="flex items-center justify-between flex-wrap gap-3">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Reporte de créditos</h1>
-      <p class="text-sm text-gray-500 mt-0.5">Ventas a cuotas — semanal, quincenal y mensual</p>
+      <p class="text-sm text-gray-500 mt-0.5">Ventas a cuotas y por abonos</p>
     </div>
     <div class="flex gap-2">
       <button (click)="exportar('xlsx')"
@@ -128,13 +128,19 @@
                 {{ r.saldo_pendiente | cop }}
               </td>
               <td class="px-4 py-3 text-center">
-                <span class="text-xs tabular-nums">
-                  <span class="text-green-700 font-medium">{{ r.cuotas_pagadas }}</span>
-                  <span class="text-gray-400"> / {{ r.n_cuotas }}</span>
-                  @if (r.cuotas_vencidas > 0) {
-                    <span class="ml-1 text-red-600">({{ r.cuotas_vencidas }} venc.)</span>
-                  }
-                </span>
+                @if (r.tipo === 'abono') {
+                  <span class="text-xs tabular-nums text-teal-700 font-medium">
+                    {{ r.abonos_registrados }} abono(s)
+                  </span>
+                } @else {
+                  <span class="text-xs tabular-nums">
+                    <span class="text-green-700 font-medium">{{ r.cuotas_pagadas }}</span>
+                    <span class="text-gray-400"> / {{ r.n_cuotas }}</span>
+                    @if (r.cuotas_vencidas > 0) {
+                      <span class="ml-1 text-red-600">({{ r.cuotas_vencidas }} venc.)</span>
+                    }
+                  </span>
+                }
               </td>
               <td class="px-4 py-3">
                 <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
@@ -171,9 +177,13 @@
                 {{ r.saldo_pendiente | cop }}
               </strong>
             </span>
-            <span class="text-gray-500">Cuotas: <strong>{{ r.cuotas_pagadas }}/{{ r.n_cuotas }}</strong></span>
-            @if (r.cuotas_vencidas > 0) {
-              <span class="text-red-600 font-medium">{{ r.cuotas_vencidas }} vencida(s)</span>
+            @if (r.tipo === 'abono') {
+              <span class="text-gray-500">Abonos: <strong class="text-teal-700">{{ r.abonos_registrados }}</strong></span>
+            } @else {
+              <span class="text-gray-500">Cuotas: <strong>{{ r.cuotas_pagadas }}/{{ r.n_cuotas }}</strong></span>
+              @if (r.cuotas_vencidas > 0) {
+                <span class="text-red-600 font-medium">{{ r.cuotas_vencidas }} vencida(s)</span>
+              }
             }
           </div>
         </div>

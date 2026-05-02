@@ -9,7 +9,6 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { DatePipe } from '@angular/common';
 import { AppIconComponent } from '../../../../shared/components/icon/icon';
 import { CopPipe } from '../../../../shared/pipes/cop-pipe';
 import { CfVentasStore } from '../data-access/cf-ventas.store';
@@ -17,11 +16,11 @@ import { ClientesApiService } from '../../../clientes/data-access/clientes-api';
 import { CfProductosApi } from '../../cf-productos/data-access/cf-productos-api';
 import type { ClienteListItem } from '../../../clientes/data-access/clientes.model';
 import type { CfProducto } from '../../cf-productos/data-access/cf-productos.model';
-import type { IntervaloVenta } from '../data-access/cf-ventas.model';
+import type { MedioPago, RegistrarAbonoDto } from '../data-access/cf-ventas.model';
 
 @Component({
   selector: 'app-feature-cf-venta-form',
-  imports: [ReactiveFormsModule, RouterLink, AppIconComponent, CopPipe, DatePipe],
+  imports: [ReactiveFormsModule, RouterLink, AppIconComponent, CopPipe],
   templateUrl: './feature-cf-venta-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -32,10 +31,9 @@ export class FeatureCfVentaForm implements OnInit {
   private readonly clientesApi    = inject(ClientesApiService);
   private readonly productosApi   = inject(CfProductosApi);
 
-  protected readonly guardando    = signal(false);
-  protected readonly error        = signal<string | null>(null);
-  protected readonly productos    = signal<CfProducto[]>([]);
-  protected readonly simulando    = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly error    = signal<string | null>(null);
+  protected readonly productos = signal<CfProducto[]>([]);
 
   // Buscador de clientes
   protected readonly busquedaCliente   = signal('');
@@ -45,42 +43,42 @@ export class FeatureCfVentaForm implements OnInit {
   protected readonly mostrarDropdown   = signal(false);
   protected readonly inputFocused      = signal(false);
 
-  protected readonly intervalos: { value: IntervaloVenta; label: string }[] = [
-    { value: 'semanal',   label: 'Semanal' },
-    { value: 'quincenal', label: 'Quincenal' },
-    { value: 'mensual',   label: 'Mensual' },
+  protected readonly mediosPago: { value: MedioPago; label: string }[] = [
+    { value: 'efectivo',     label: 'Efectivo' },
+    { value: 'transferencia', label: 'Transferencia' },
+    { value: 'nequi',        label: 'Nequi' },
+    { value: 'daviplata',    label: 'Daviplata' },
+    { value: 'otro',         label: 'Otro' },
   ];
 
   protected readonly form = this.fb.group({
-    clienteId:  ['', Validators.required],
-    tipo:       ['contado', Validators.required],
-    reservaId:  [''],
-    notas:      [''],
-    lineas: this.fb.array([this.nuevaLinea()]),
-    planCuotas: this.fb.group({
-      nCuotas:     [4, [Validators.required, Validators.min(1), Validators.max(52)]],
-      fechaInicio: ['', Validators.required],
-      intervalo:   ['semanal' as IntervaloVenta, Validators.required],
-    }),
+    clienteId: ['', Validators.required],
+    tipo:      ['contado', Validators.required],
+    reservaId: [''],
+    notas:     [''],
+    lineas:  this.fb.array([this.nuevaLinea()]),
+    abonos:  this.fb.array<ReturnType<FeatureCfVentaForm['nuevoAbono']>>([]),
   });
 
   get lineas(): FormArray { return this.form.get('lineas') as FormArray; }
+  get abonos(): FormArray { return this.form.get('abonos') as FormArray; }
   get tipo(): string { return this.form.get('tipo')?.value ?? 'contado'; }
-  protected readonly simulacion = this.store.simulacion;
 
   private readonly tipoSignal = toSignal(
     this.form.get('tipo')!.valueChanges,
     { initialValue: 'contado' as string },
   );
-  protected readonly esCuotas = computed(() => this.tipoSignal() === 'cuotas');
-  protected readonly esAbono  = computed(() => this.tipoSignal() === 'abono');
+  protected readonly esAbono = computed(() => this.tipoSignal() === 'abono');
+
+  protected totalAbonos(): number {
+    return Array.from({ length: this.abonos.length }, (_, i) =>
+      Number(this.abonos.at(i).get('monto')?.value ?? 0),
+    ).reduce((a, b) => a + b, 0);
+  }
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   async ngOnInit(): Promise<void> {
-    const hoy = new Date().toISOString().slice(0, 10);
-    this.form.get('planCuotas.fechaInicio')?.setValue(hoy);
-
     const productos = await this.productosApi
       .listar({ estado: 'disponible', pageSize: 200 })
       .then(r => r.items)
@@ -140,11 +138,22 @@ export class FeatureCfVentaForm implements OnInit {
     });
   }
 
+  private nuevoAbono() {
+    return this.fb.group({
+      monto:     ['', [Validators.required, Validators.min(1)]],
+      medioPago: ['efectivo' as MedioPago, Validators.required],
+    });
+  }
+
   agregarLinea(): void { this.lineas.push(this.nuevaLinea()); }
 
   quitarLinea(i: number): void {
     if (this.lineas.length > 1) this.lineas.removeAt(i);
   }
+
+  agregarAbono(): void { this.abonos.push(this.nuevoAbono()); }
+
+  quitarAbono(i: number): void { this.abonos.removeAt(i); }
 
   productoDeLinea(i: number): CfProducto | undefined {
     const id = this.lineas.at(i).get('productoId')?.value;
@@ -162,18 +171,6 @@ export class FeatureCfVentaForm implements OnInit {
       .reduce((a, b) => a + b, 0);
   }
 
-  async simular(): Promise<void> {
-    const total = this.totalVenta();
-    if (total <= 0) return;
-    const plan = this.form.get('planCuotas')?.value;
-    if (!plan?.nCuotas || !plan.fechaInicio || !plan.intervalo) return;
-    this.simulando.set(true);
-    await this.store.simularCuotas(
-      String(total), Number(plan.nCuotas), plan.fechaInicio, plan.intervalo as IntervaloVenta,
-    );
-    this.simulando.set(false);
-  }
-
   protected campo(path: string): boolean {
     const c = this.form.get(path);
     return !!(c?.invalid && c.touched);
@@ -188,20 +185,23 @@ export class FeatureCfVentaForm implements OnInit {
     try {
       const ventaId = await this.store.crear({
         clienteId: v.clienteId!,
-        tipo:      v.tipo as 'contado' | 'cuotas' | 'abono',
+        tipo:      v.tipo as 'contado' | 'abono',
         reservaId: v.reservaId || undefined,
         notas:     v.notas || undefined,
         lineas: this.lineas.controls.map((_, i) => ({
           productoId: this.lineas.at(i).get('productoId')!.value as string,
           cantidad:   Number(this.lineas.at(i).get('cantidad')!.value),
         })),
-        planCuotas: v.tipo === 'cuotas' ? {
-          nCuotas:    Number(v.planCuotas?.nCuotas),
-          fechaInicio: v.planCuotas?.fechaInicio ?? '',
-          intervalo:  v.planCuotas?.intervalo as IntervaloVenta,
-        } : undefined,
       });
-      this.store.limpiarSimulacion();
+
+      if (v.tipo === 'abono' && this.abonos.length > 0) {
+        for (let i = 0; i < this.abonos.length; i++) {
+          const a = this.abonos.at(i).getRawValue() as { monto: string; medioPago: MedioPago };
+          const dto: RegistrarAbonoDto = { monto: String(a.monto), medioPago: a.medioPago };
+          await this.store.registrarAbono(ventaId, dto);
+        }
+      }
+
       await this.router.navigate(['/credifass/ventas', ventaId]);
     } catch (err: unknown) {
       this.error.set(err instanceof Error ? err.message : 'Error al registrar la venta.');
