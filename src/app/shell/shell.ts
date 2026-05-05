@@ -27,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/prestamos',  icon: 'wallet',           label: 'Préstamos',  roles: ['admin', 'supervisor'] },
   { path: '/pagos',      icon: 'hand-coins',       label: 'Cobranza',   mobileLabel: 'Ruta' },
   { path: '/reportes',   icon: 'bar-chart',        label: 'Reportes',   roles: ['admin', 'supervisor'] },
+  { path: '/cierres',    icon: 'calendar-check',   label: 'Cierres',    roles: ['admin', 'supervisor'] },
   { path: '/auditoria',  icon: 'shield-check',     label: 'Auditoría',  roles: ['admin'] },
   { path: '/usuarios',   icon: 'user-cog',         label: 'Usuarios',   roles: ['admin'] },
 ];

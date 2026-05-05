@@ -36,6 +36,7 @@
           },
           "configurations": {
             "production": {
+              "allowedCommonJsDependencies": ["html2canvas", "canvg", "core-js", "raf", "rgbcolor"],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

@@ -40,6 +40,8 @@
     "decimal.js": "^10.6.0",
     "dexie": "^4.4.2",
     "echarts": "^6.0.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "ngx-echarts": "^21.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

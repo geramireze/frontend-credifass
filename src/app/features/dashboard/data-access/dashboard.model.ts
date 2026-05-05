@@ -11,6 +11,8 @@ export interface DashboardKpis {
   ganancia_intereses: number;
   utilidad_neta: number;
   prestamos_activos: number;
+  prestamos_semanales: number;
+  prestamos_quincenales: number;
   clientes_al_dia: number;
   clientes_en_mora: number;
   cartera_pendiente: number;

@@ -59,6 +59,13 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/credifass/credifass.routes').then((m) => m.CREDIFASS_ROUTES),
       },
+      {
+        path: 'cierres',
+        loadComponent: () =>
+          import('./features/cierres/feature-cierres/feature-cierres').then(
+            (m) => m.FeatureCierres,
+          ),
+      },
     ],
   },
   {

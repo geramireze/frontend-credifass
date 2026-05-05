@@ -8,6 +8,7 @@ export interface ApiError {
   code?: string;
   statusCode: number;
   requestId?: string;
+  data?: Record<string, unknown>;
 }
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
@@ -15,11 +16,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
+      const body = err.error as Record<string, unknown> | null | undefined;
       const apiError: ApiError = {
-        message: err.error?.message ?? err.message ?? 'Error desconocido',
-        code: err.error?.code,
+        message: (body?.['message'] as string) ?? err.message ?? 'Error desconocido',
+        code: body?.['code'] as string | undefined,
         statusCode: err.status,
-        requestId: err.error?.requestId ?? req.headers.get('X-Request-Id') ?? undefined,
+        requestId: (body?.['requestId'] as string) ?? req.headers.get('X-Request-Id') ?? undefined,
+        data: body ?? undefined,
       };
       logger.error('api_error', { ...apiError, url: req.url });
       return throwError(() => apiError);

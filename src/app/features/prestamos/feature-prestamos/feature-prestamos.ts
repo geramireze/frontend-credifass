@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PrestamosStore } from '../data-access/prestamos.store';
 import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
-import { EstadoPrestamo } from '../data-access/prestamos.model';
+import { EstadoPrestamo, FrecuenciaPago } from '../data-access/prestamos.model';
 
 const ESTADO_LABELS: Record<EstadoPrestamo, string> = {
   al_dia: 'Al día',
@@ -30,8 +30,15 @@ const ESTADO_BADGE: Record<EstadoPrestamo, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeaturePrestamos implements OnInit {
-  protected readonly store = inject(PrestamosStore);
+  protected readonly store     = inject(PrestamosStore);
   protected readonly authStore = inject(AuthStore);
+
+  protected readonly frecuenciaFiltro = signal<FrecuenciaPago | ''>('');
+
+  protected readonly prestamosFiltrados = computed(() => {
+    const f = this.frecuenciaFiltro();
+    return f ? this.store.items().filter(p => p.frecuencia_pago === f) : this.store.items();
+  });
 
   ngOnInit(): void {
     this.store.cargarLista();

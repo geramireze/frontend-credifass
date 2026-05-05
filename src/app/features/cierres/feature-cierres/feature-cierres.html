@@ -1,0 +1,223 @@
+<div class="p-4 md:p-8">
+
+  <!-- Header -->
+  <div class="page-header mb-6">
+    <div>
+      <h1 class="page-title">Cierres de semana</h1>
+      <p class="page-sub">Resumen consolidado por período</p>
+    </div>
+    @if (esAdmin()) {
+      <button type="button" class="btn-primary flex items-center gap-2"
+              (click)="store.realizarCierre()"
+              [disabled]="store.guardando()">
+        <app-icon name="lock" [size]="16" />
+        {{ store.guardando() ? 'Generando…' : 'Realizar cierre' }}
+      </button>
+    }
+  </div>
+
+  <!-- Modal: cierre demasiado pronto -->
+  @if (store.diasRestantes()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         role="dialog" aria-modal="true" aria-labelledby="modal-cierre-titulo">
+
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+           (click)="store.cerrarAviso()"></div>
+
+      <!-- Panel -->
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center text-center">
+
+        <!-- Icono -->
+        <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+          <app-icon name="clock" [size]="32" class="text-amber-500" />
+        </div>
+
+        <!-- Título -->
+        <h2 id="modal-cierre-titulo" class="text-lg font-bold text-gray-900 mb-1">
+          Cierre no disponible aún
+        </h2>
+
+        <!-- Mensaje -->
+        <p class="text-sm text-gray-600 mb-1">
+          Faltan <strong class="text-amber-700">{{ store.diasRestantes() }} día(s)</strong>
+          para poder realizar el próximo cierre.
+        </p>
+        <p class="text-sm text-gray-500">
+          Disponible desde:
+          <strong class="text-gray-700">{{ store.proximoCierre() | date:'dd/MM/yyyy' }}</strong>
+        </p>
+
+        <!-- Botón -->
+        <button type="button"
+                class="btn-primary mt-6 w-full"
+                (click)="store.cerrarAviso()">
+          Entendido
+        </button>
+
+      </div>
+    </div>
+  }
+
+  @if (store.error()) {
+    <div class="alert-error mb-4" role="alert">{{ store.error() }}</div>
+  }
+
+  <!-- Lista de cierres -->
+  @if (store.loading()) {
+    <div class="flex justify-center py-16" aria-label="Cargando">
+      <app-icon name="loader" [size]="36" class="spin text-primary" />
+    </div>
+  } @else if (store.items().length === 0) {
+    <div class="card flex flex-col items-center justify-center py-20 text-app-muted-fg">
+      <app-icon name="calendar-off" [size]="48" class="mb-4 opacity-40" />
+      <p class="text-lg font-medium">Sin cierres registrados</p>
+      <p class="text-sm mt-1">El primer cierre puede realizarse en cualquier momento.</p>
+    </div>
+  } @else {
+    <div class="space-y-3">
+      @for (c of store.items(); track c.id) {
+        <div class="card p-4 flex items-center gap-4 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
+             (click)="verDetalle(c)" role="button"
+             [attr.aria-expanded]="store.seleccionado()?.id === c.id">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+            <app-icon name="calendar-check" [size]="18" class="text-indigo-600" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-app-fg text-sm">
+              {{ c.fechaDesde | date:'dd MMM yyyy' }} — {{ c.fechaHasta | date:'dd MMM yyyy' }}
+            </p>
+            <p class="text-xs text-app-muted-fg mt-0.5">
+              Prestado: {{ c.datos.prestamos.monto_prestado | cop }} ·
+              Recaudado: {{ c.datos.prestamos.pagos_monto | cop }} ·
+              Ventas CF: {{ c.datos.credifass.ventas_monto | cop }}
+            </p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-xs text-app-muted-fg">Cartera pdte.</p>
+            <p class="text-sm font-bold text-amber-700">{{ c.datos.cartera.total_pendiente | cop }}</p>
+          </div>
+          <app-icon name="chevron-right" [size]="16" class="text-app-muted-fg shrink-0" />
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ PANEL DETALLE ══════════════════════════════════════════════════════ -->
+  @if (store.seleccionado(); as c) {
+    <div class="mt-6">
+
+      <!-- Barra de acción -->
+      <div class="flex items-center justify-between mb-4">
+        <button type="button" class="btn-secondary flex items-center gap-2 text-sm"
+                (click)="store.cerrarDetalle()">
+          <app-icon name="arrow-left" [size]="14" />Volver
+        </button>
+        <button type="button" class="btn-primary flex items-center gap-2 text-sm"
+                (click)="exportarPdf()"
+                [disabled]="exportando()">
+          <app-icon name="printer" [size]="14" />
+          {{ exportando() ? 'Generando PDF…' : 'Exportar PDF' }}
+        </button>
+      </div>
+
+      <!-- ══ INFORME ════════════════════════════════════════════════════════ -->
+      <div id="cierre-informe" class="bg-white rounded-2xl p-8 space-y-6 shadow-sm border border-app-border">
+
+        <!-- Encabezado -->
+        <div class="text-center border-b border-gray-200 pb-5">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">CrediFass</p>
+          <h2 class="text-2xl font-bold text-gray-800">Informe de Cierre de Semana</h2>
+          <p class="text-sm text-gray-500 mt-1">
+            Período: {{ c.fechaDesde | date:'dd/MM/yyyy' }} — {{ c.fechaHasta | date:'dd/MM/yyyy' }}
+          </p>
+          <p class="text-xs text-gray-400 mt-0.5">Generado el {{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+
+        <!-- ── Préstamos ──────────────────────────────────────────────── -->
+        <section>
+          <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+            <app-icon name="wallet" [size]="13" class="text-blue-400" />
+            Módulo Préstamos
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="rounded-xl bg-blue-50 p-3 text-center ring-1 ring-blue-100">
+              <p class="text-[10px] uppercase text-blue-500 font-semibold">Nuevos préstamos</p>
+              <p class="text-2xl font-bold text-blue-800 mt-1">{{ c.datos.prestamos.nuevos }}</p>
+            </div>
+            <div class="rounded-xl bg-blue-50 p-3 text-center ring-1 ring-blue-100">
+              <p class="text-[10px] uppercase text-blue-500 font-semibold">Monto prestado</p>
+              <p class="text-lg font-bold text-blue-800 mt-1 tabular-nums">{{ c.datos.prestamos.monto_prestado | cop }}</p>
+            </div>
+            <div class="rounded-xl bg-green-50 p-3 text-center ring-1 ring-green-100">
+              <p class="text-[10px] uppercase text-green-600 font-semibold">Pagos recibidos</p>
+              <p class="text-2xl font-bold text-green-800 mt-1">{{ c.datos.prestamos.pagos_count }}</p>
+            </div>
+            <div class="rounded-xl bg-green-50 p-3 text-center ring-1 ring-green-100">
+              <p class="text-[10px] uppercase text-green-600 font-semibold">Monto recaudado</p>
+              <p class="text-lg font-bold text-green-800 mt-1 tabular-nums">{{ c.datos.prestamos.pagos_monto | cop }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Credifass ──────────────────────────────────────────────── -->
+        <section>
+          <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+            <app-icon name="shopping-cart" [size]="13" class="text-emerald-400" />
+            Módulo Inventario / Ventas
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="rounded-xl bg-emerald-50 p-3 text-center ring-1 ring-emerald-100">
+              <p class="text-[10px] uppercase text-emerald-600 font-semibold">Ventas realizadas</p>
+              <p class="text-2xl font-bold text-emerald-800 mt-1">{{ c.datos.credifass.ventas_count }}</p>
+            </div>
+            <div class="rounded-xl bg-emerald-50 p-3 text-center ring-1 ring-emerald-100">
+              <p class="text-[10px] uppercase text-emerald-600 font-semibold">Monto ventas</p>
+              <p class="text-lg font-bold text-emerald-800 mt-1 tabular-nums">{{ c.datos.credifass.ventas_monto | cop }}</p>
+            </div>
+            <div class="rounded-xl bg-teal-50 p-3 text-center ring-1 ring-teal-100">
+              <p class="text-[10px] uppercase text-teal-600 font-semibold">Abonos mercancía</p>
+              <p class="text-2xl font-bold text-teal-800 mt-1">{{ c.datos.credifass.abonos_count }}</p>
+            </div>
+            <div class="rounded-xl bg-teal-50 p-3 text-center ring-1 ring-teal-100">
+              <p class="text-[10px] uppercase text-teal-600 font-semibold">Monto abonos</p>
+              <p class="text-lg font-bold text-teal-800 mt-1 tabular-nums">{{ c.datos.credifass.abonos_monto | cop }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Cartera pendiente ──────────────────────────────────────── -->
+        <section>
+          <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+            <app-icon name="clock" [size]="13" class="text-amber-400" />
+            Cartera pendiente por recoger
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100">
+              <p class="text-xs font-semibold text-amber-700">Cartera préstamos</p>
+              <p class="text-2xl font-bold text-amber-800 mt-1 tabular-nums">{{ c.datos.cartera.prestamos_pendiente | cop }}</p>
+              <p class="text-[10px] text-amber-500 mt-0.5">Saldo activo al cierre</p>
+            </div>
+            <div class="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100">
+              <p class="text-xs font-semibold text-amber-700">Cartera mercancía</p>
+              <p class="text-2xl font-bold text-amber-800 mt-1 tabular-nums">{{ c.datos.cartera.credifass_pendiente | cop }}</p>
+              <p class="text-[10px] text-amber-500 mt-0.5">Ventas en abono activas</p>
+            </div>
+            <div class="rounded-xl bg-orange-600 p-4 text-white">
+              <p class="text-xs font-semibold text-orange-100">Total por recoger</p>
+              <p class="text-2xl font-bold mt-1 tabular-nums">{{ c.datos.cartera.total_pendiente | cop }}</p>
+              <p class="text-[10px] text-orange-200 mt-0.5">Préstamos + Mercancía</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Pie -->
+        <div class="border-t border-gray-100 pt-4 text-center text-xs text-gray-300">
+          CrediFass · Cierre {{ c.fechaHasta | date:'dd/MM/yyyy' }}
+        </div>
+
+      </div><!-- /cierre-informe -->
+    </div>
+  }
+
+</div>

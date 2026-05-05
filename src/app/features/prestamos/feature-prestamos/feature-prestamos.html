@@ -39,11 +39,41 @@
     </div>
   }
 
+  <!-- Filtros de modalidad -->
+  @if (store.items().length > 0) {
+    <div class="flex items-center gap-2 mb-3" role="group" aria-label="Filtrar por modalidad de pago">
+      <span class="text-xs text-app-muted-fg font-medium">Modalidad:</span>
+      <button type="button"
+              (click)="frecuenciaFiltro.set('')"
+              [class]="frecuenciaFiltro() === '' ? 'btn-primary text-xs px-3 h-7' : 'btn-secondary text-xs px-3 h-7'"
+              [attr.aria-pressed]="frecuenciaFiltro() === ''">
+        Todos
+      </button>
+      <button type="button"
+              (click)="frecuenciaFiltro.set('semanal')"
+              [class]="frecuenciaFiltro() === 'semanal' ? 'btn-primary text-xs px-3 h-7' : 'btn-secondary text-xs px-3 h-7'"
+              [attr.aria-pressed]="frecuenciaFiltro() === 'semanal'">
+        <app-icon name="calendar" [size]="12" class="mr-1" />Semanal
+      </button>
+      <button type="button"
+              (click)="frecuenciaFiltro.set('quincenal')"
+              [class]="frecuenciaFiltro() === 'quincenal' ? 'btn-primary text-xs px-3 h-7' : 'btn-secondary text-xs px-3 h-7'"
+              [attr.aria-pressed]="frecuenciaFiltro() === 'quincenal'">
+        <app-icon name="calendar-days" [size]="12" class="mr-1" />Quincenal
+      </button>
+      @if (frecuenciaFiltro()) {
+        <span class="text-xs text-app-muted-fg ml-1">
+          {{ prestamosFiltrados().length }} de {{ store.items().length }}
+        </span>
+      }
+    </div>
+  }
+
   <!-- Table -->
   @if (store.items().length > 0) {
     <div class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full rt lg:min-w-[860px]" aria-label="Lista de préstamos">
+        <table class="w-full rt lg:min-w-[960px]" aria-label="Lista de préstamos">
           <thead>
             <tr class="bg-app-muted border-b border-app-border h-11">
               <th class="px-4 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cliente</th>
@@ -51,6 +81,7 @@
               <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Monto</th>
               <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuota</th>
               <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Sem.</th>
+              <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Modalidad</th>
               <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Estado</th>
               <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuotas</th>
               <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Saldo</th>
@@ -58,7 +89,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (p of store.items(); track p.id) {
+            @for (p of prestamosFiltrados(); track p.id) {
               <tr class="border-b border-app-border last:border-b-0 h-14 hover:bg-app-muted/40 transition-colors cursor-pointer"
                   [routerLink]="[p.id]">
                 <td class="px-4 text-sm font-medium text-app-fg truncate" data-label="Cliente">{{ p.cliente_nombre }}</td>
@@ -66,6 +97,17 @@
                 <td class="px-3 text-sm font-medium text-app-fg text-right whitespace-nowrap" data-label="Monto">{{ p.monto_prestado | cop }}</td>
                 <td class="px-3 text-sm text-app-muted-fg text-right whitespace-nowrap" data-label="Cuota">{{ p.cuota_semanal | cop }}</td>
                 <td class="px-3 text-sm text-app-muted-fg text-center" data-label="Sem.">{{ p.numero_semanas }}</td>
+                <td class="px-3" data-label="Modalidad">
+                  @if (p.frecuencia_pago === 'semanal') {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 whitespace-nowrap">
+                      <app-icon name="calendar" [size]="10" />Semanal
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 whitespace-nowrap">
+                      <app-icon name="calendar-days" [size]="10" />Quincenal
+                    </span>
+                  }
+                </td>
                 <td class="px-3" data-label="Estado">
                   <span class="whitespace-nowrap" [class]="estadoBadge(p.estado)">{{ estadoLabel(p.estado) }}</span>
                 </td>

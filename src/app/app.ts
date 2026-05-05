@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { PwaInstallComponent } from './shared/components/pwa-install/pwa-install';
+import { PwaUpdate } from './shared/components/pwa-update/pwa-update';
 import { OfflineQueue } from './core/offline/offline-queue';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, PwaInstallComponent],
+  imports: [RouterOutlet, PwaInstallComponent, PwaUpdate],
   template: `
     <router-outlet />
     <app-pwa-install />
+    <app-pwa-update />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
