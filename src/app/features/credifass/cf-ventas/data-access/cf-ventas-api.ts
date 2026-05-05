@@ -89,12 +89,12 @@ export class CfVentasApi {
     );
   }
 
-  anularPago(ventaId: string, pagoId: string): Promise<void> {
-    return firstValueFrom(this.http.delete<void>(`${this.base}/${ventaId}/pagos/${pagoId}`));
+  anularPago(pagoId: string, motivo: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/pagos/${pagoId}/anular`, { motivo }));
   }
 
   anular(id: string): Promise<void> {
-    return firstValueFrom(this.http.delete<void>(`${this.base}/${id}`));
+    return firstValueFrom(this.http.post<void>(`${this.base}/${id}/anular`, {}));
   }
 
   listarAbonos(ventaId: string): Promise<CfAbonoVenta[]> {
