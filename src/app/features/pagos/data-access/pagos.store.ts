@@ -3,11 +3,14 @@ import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { EmptyError, TimeoutError } from 'rxjs';
 import { PagosApiService } from './pagos-api';
 import { RutaHoy, CuotaRuta, RegistrarPagoDto } from './pagos.model';
+import { OfflineQueue } from '../../../core/offline/offline-queue';
 
 interface PagosState {
   ruta: RutaHoy | null;
   cuotaSeleccionada: CuotaRuta | null;
   pagoExitoso: boolean;
+  pagoOffline: boolean;
+  pendientesOffline: number;
   loading: boolean;
   error: string | null;
 }
@@ -38,6 +41,8 @@ const estadoInicial: PagosState = {
   ruta: null,
   cuotaSeleccionada: null,
   pagoExitoso: false,
+  pagoOffline: false,
+  pendientesOffline: 0,
   loading: false,
   error: null,
 };
@@ -45,9 +50,9 @@ const estadoInicial: PagosState = {
 export const PagosStore = signalStore(
   { providedIn: 'root' },
   withState<PagosState>(estadoInicial),
-  withMethods((store, api = inject(PagosApiService)) => ({
+  withMethods((store, api = inject(PagosApiService), offlineQueue = inject(OfflineQueue)) => ({
     async cargarRuta(): Promise<void> {
-      patchState(store, { loading: true, error: null });
+      patchState(store, { loading: true, error: null, pendientesOffline: offlineQueue.count() });
       try {
         const ruta = await api.rutaHoy();
         patchState(store, { ruta, loading: false });
@@ -58,7 +63,7 @@ export const PagosStore = signalStore(
     },
 
     seleccionarCuota(cuota: CuotaRuta): void {
-      patchState(store, { cuotaSeleccionada: cuota, pagoExitoso: false, error: null });
+      patchState(store, { cuotaSeleccionada: cuota, pagoExitoso: false, pagoOffline: false, error: null });
     },
 
     cancelarSeleccion(): void {
@@ -66,12 +71,21 @@ export const PagosStore = signalStore(
     },
 
     async registrarPago(dto: RegistrarPagoDto): Promise<void> {
-      patchState(store, { loading: true, error: null, pagoExitoso: false });
+      patchState(store, { loading: true, error: null, pagoExitoso: false, pagoOffline: false });
       try {
-        await api.registrar(dto);
-        patchState(store, { pagoExitoso: true, cuotaSeleccionada: null, loading: false });
-        const ruta = await api.rutaHoy();
-        patchState(store, { ruta });
+        const resultado = await api.registrar(dto);
+        const esOffline = !!(resultado as unknown as { offline?: boolean }).offline;
+        patchState(store, {
+          pagoExitoso: !esOffline,
+          pagoOffline: esOffline,
+          cuotaSeleccionada: null,
+          loading: false,
+          pendientesOffline: offlineQueue.count(),
+        });
+        if (!esOffline) {
+          const ruta = await api.rutaHoy();
+          patchState(store, { ruta });
+        }
       } catch (err: unknown) {
         if (err instanceof EmptyError) { patchState(store, { loading: false }); return; }
         patchState(store, { error: extractErrorMsg(err, 'No se pudo registrar el pago. Intenta de nuevo.'), loading: false });

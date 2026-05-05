@@ -98,8 +98,18 @@
           </div>
         </div>
 
-        <!-- Notas -->
+        <!-- Fecha de venta -->
         <div>
+          <label class="app-label" for="fecha-venta">Fecha de venta *</label>
+          <input id="fecha-venta" type="date" formControlName="fechaVenta" class="app-input"
+                 [class.border-status-error]="campo('fechaVenta')" />
+          @if (campo('fechaVenta')) {
+            <p class="text-xs text-status-error-fg mt-1">La fecha es requerida</p>
+          }
+        </div>
+
+        <!-- Notas -->
+        <div class="sm:col-span-2">
           <label class="app-label" for="notas">Notas</label>
           <input id="notas" type="text" formControlName="notas" class="app-input"
                  placeholder="Observaciones opcionales" />
@@ -192,13 +202,19 @@
         <div formArrayName="abonos" class="space-y-3">
           @for (ab of abonos.controls; track $index) {
             <div [formGroupName]="$index"
-                 class="flex gap-3 items-end p-3 rounded-lg border border-gray-100 bg-gray-50">
+                 class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 items-end p-3 rounded-lg border border-gray-100 bg-gray-50">
               <!-- Monto -->
-              <div class="flex-1">
+              <div>
                 <label [for]="'ab-monto-'+$index" class="app-label">Monto *</label>
                 <input [id]="'ab-monto-'+$index" type="number" min="1"
                        formControlName="monto" class="app-input"
                        placeholder="0" />
+              </div>
+              <!-- Fecha del abono -->
+              <div class="w-38 shrink-0">
+                <label [for]="'ab-fecha-'+$index" class="app-label">Fecha</label>
+                <input [id]="'ab-fecha-'+$index" type="date"
+                       formControlName="fechaAbono" class="app-input" />
               </div>
               <!-- Medio de pago -->
               <div class="w-36 shrink-0">
@@ -211,7 +227,7 @@
               </div>
               <!-- Quitar -->
               <button type="button" (click)="quitarAbono($index)"
-                      class="mb-1 p-1.5 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                      class="mb-1 p-1.5 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 rounded self-end"
                       [attr.aria-label]="'Quitar abono ' + ($index + 1)">
                 <app-icon name="trash-2" [size]="15" />
               </button>

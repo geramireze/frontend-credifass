@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ClienteListItem, ClienteDetalle, ClientesListResponse, ClientesFiltros, CrearClienteDto } from './clientes.model';
+import { OfflineCache } from '../../../core/offline/offline-cache';
 
 type RawListItem = Record<string, unknown>;
 
@@ -34,27 +35,46 @@ function mapDetalle(raw: RawListItem): ClienteDetalle {
   providedIn: 'root',
 })
 export class ClientesApiService {
-  private readonly http = inject(HttpClient);
-  private readonly base = `${environment.apiUrl}/clientes`;
+  private readonly http  = inject(HttpClient);
+  private readonly cache = inject(OfflineCache);
+  private readonly base  = `${environment.apiUrl}/clientes`;
 
-  listar(filtros: ClientesFiltros = {}): Promise<ClientesListResponse> {
+  async listar(filtros: ClientesFiltros = {}): Promise<ClientesListResponse> {
+    const cacheKey = `clientes_list_${JSON.stringify(filtros)}`;
     let params = new HttpParams();
     if (filtros.q) params = params.set('q', filtros.q);
     if (filtros.estado) params = params.set('estado', filtros.estado);
-    if (filtros.page) params = params.set('page', filtros.page);
-    if (filtros.pageSize) params = params.set('pageSize', filtros.pageSize);
+    if (filtros.page) params = params.set('page', String(filtros.page));
+    if (filtros.pageSize) params = params.set('pageSize', String(filtros.pageSize));
     if (filtros.sort) params = params.set('sort', filtros.sort);
-    return firstValueFrom(
-      this.http.get<{ total: number; page: number; pageSize: number; items: RawListItem[] }>(this.base, { params }).pipe(
-        map(res => ({ ...res, items: res.items.map(mapListItem) })),
-      ),
-    );
+    try {
+      const res = await firstValueFrom(
+        this.http.get<{ total: number; page: number; pageSize: number; items: RawListItem[] }>(this.base, { params }).pipe(
+          map(r => ({ ...r, items: r.items.map(mapListItem) })),
+        ),
+      );
+      this.cache.set(cacheKey, res);
+      return res;
+    } catch {
+      const cached = this.cache.getStale<ClientesListResponse>(cacheKey);
+      if (cached) return cached;
+      throw new Error('Sin conexión y sin datos cacheados de clientes.');
+    }
   }
 
-  obtener(id: string): Promise<ClienteDetalle> {
-    return firstValueFrom(
-      this.http.get<RawListItem>(`${this.base}/${id}`).pipe(map(mapDetalle)),
-    );
+  async obtener(id: string): Promise<ClienteDetalle> {
+    const cacheKey = `cliente_${id}`;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<RawListItem>(`${this.base}/${id}`).pipe(map(mapDetalle)),
+      );
+      this.cache.set(cacheKey, res);
+      return res;
+    } catch {
+      const cached = this.cache.getStale<ClienteDetalle>(cacheKey);
+      if (cached) return cached;
+      throw new Error('Sin conexión y sin datos cacheados del cliente.');
+    }
   }
 
   crear(dto: CrearClienteDto): Promise<ClienteDetalle> {

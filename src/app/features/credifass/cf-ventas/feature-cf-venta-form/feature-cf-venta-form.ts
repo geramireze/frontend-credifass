@@ -35,6 +35,8 @@ export class FeatureCfVentaForm implements OnInit {
   protected readonly error    = signal<string | null>(null);
   protected readonly productos = signal<CfProducto[]>([]);
 
+  protected readonly hoy = new Date().toISOString().split('T')[0];
+
   // Buscador de clientes
   protected readonly busquedaCliente   = signal('');
   protected readonly clientesFiltrados = signal<ClienteListItem[]>([]);
@@ -52,10 +54,11 @@ export class FeatureCfVentaForm implements OnInit {
   ];
 
   protected readonly form = this.fb.group({
-    clienteId: ['', Validators.required],
-    tipo:      ['contado', Validators.required],
-    reservaId: [''],
-    notas:     [''],
+    clienteId:  ['', Validators.required],
+    tipo:       ['contado', Validators.required],
+    fechaVenta: [this.hoy, Validators.required],
+    reservaId:  [''],
+    notas:      [''],
     lineas:  this.fb.array([this.nuevaLinea()]),
     abonos:  this.fb.array<ReturnType<FeatureCfVentaForm['nuevoAbono']>>([]),
   });
@@ -140,8 +143,9 @@ export class FeatureCfVentaForm implements OnInit {
 
   private nuevoAbono() {
     return this.fb.group({
-      monto:     ['', [Validators.required, Validators.min(1)]],
-      medioPago: ['efectivo' as MedioPago, Validators.required],
+      monto:      ['', [Validators.required, Validators.min(1)]],
+      medioPago:  ['efectivo' as MedioPago, Validators.required],
+      fechaAbono: [this.hoy, Validators.required],
     });
   }
 
@@ -184,10 +188,11 @@ export class FeatureCfVentaForm implements OnInit {
     const v = this.form.getRawValue();
     try {
       const ventaId = await this.store.crear({
-        clienteId: v.clienteId!,
-        tipo:      v.tipo as 'contado' | 'abono',
-        reservaId: v.reservaId || undefined,
-        notas:     v.notas || undefined,
+        clienteId:  v.clienteId!,
+        tipo:       v.tipo as 'contado' | 'abono',
+        fechaVenta: v.fechaVenta || undefined,
+        reservaId:  v.reservaId || undefined,
+        notas:      v.notas || undefined,
         lineas: this.lineas.controls.map((_, i) => ({
           productoId: this.lineas.at(i).get('productoId')!.value as string,
           cantidad:   Number(this.lineas.at(i).get('cantidad')!.value),
@@ -196,8 +201,12 @@ export class FeatureCfVentaForm implements OnInit {
 
       if (v.tipo === 'abono' && this.abonos.length > 0) {
         for (let i = 0; i < this.abonos.length; i++) {
-          const a = this.abonos.at(i).getRawValue() as { monto: string; medioPago: MedioPago };
-          const dto: RegistrarAbonoDto = { monto: String(a.monto), medioPago: a.medioPago };
+          const a = this.abonos.at(i).getRawValue() as { monto: string; medioPago: MedioPago; fechaAbono: string };
+          const dto: RegistrarAbonoDto = {
+            monto:      String(a.monto),
+            medioPago:  a.medioPago,
+            fechaAbono: a.fechaAbono || undefined,
+          };
           await this.store.registrarAbono(ventaId, dto);
         }
       }

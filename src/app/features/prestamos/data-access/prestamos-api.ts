@@ -6,6 +6,7 @@ import {
   PrestamosListResponse, PrestamoListItem, CuotaPrestamo,
   SimulacionRequest, SimulacionResponse, CrearPrestamoDto, EditarPrestamoDto, PrestamosFiltros,
 } from './prestamos.model';
+import { OfflineCache } from '../../../core/offline/offline-cache';
 
 type RawPrestamo = Record<string, unknown> & {
   cliente?: Record<string, unknown>;
@@ -49,27 +50,46 @@ function mapPrestamo(raw: RawPrestamo): PrestamoListItem {
   providedIn: 'root',
 })
 export class PrestamosApiService {
-  private readonly http = inject(HttpClient);
-  private readonly base = `${environment.apiUrl}/prestamos`;
+  private readonly http  = inject(HttpClient);
+  private readonly cache = inject(OfflineCache);
+  private readonly base  = `${environment.apiUrl}/prestamos`;
 
-  listar(filtros: PrestamosFiltros = {}): Promise<PrestamosListResponse> {
+  async listar(filtros: PrestamosFiltros = {}): Promise<PrestamosListResponse> {
+    const cacheKey = `prestamos_list_${JSON.stringify(filtros)}`;
     let params = new HttpParams();
     Object.entries(filtros).forEach(([k, v]) => { if (v !== undefined) params = params.set(k, String(v)); });
-    return firstValueFrom(
-      this.http.get<RawPrestamo[] | { items: RawPrestamo[]; total: number }>(this.base, { params }).pipe(
-        map(res => {
-          const raw = Array.isArray(res) ? res : res.items;
-          const items = raw.map(mapPrestamo);
-          return { items, total: items.length };
-        }),
-      ),
-    );
+    try {
+      const res = await firstValueFrom(
+        this.http.get<RawPrestamo[] | { items: RawPrestamo[]; total: number }>(this.base, { params }).pipe(
+          map(r => {
+            const raw = Array.isArray(r) ? r : r.items;
+            const items = raw.map(mapPrestamo);
+            return { items, total: Array.isArray(r) ? items.length : (r as { total: number }).total };
+          }),
+        ),
+      );
+      this.cache.set(cacheKey, res);
+      return res;
+    } catch {
+      const cached = this.cache.getStale<PrestamosListResponse>(cacheKey);
+      if (cached) return cached;
+      throw new Error('Sin conexión y sin datos cacheados de préstamos.');
+    }
   }
 
-  obtener(id: string): Promise<PrestamoListItem> {
-    return firstValueFrom(
-      this.http.get<RawPrestamo>(`${this.base}/${id}`).pipe(map(mapPrestamo)),
-    );
+  async obtener(id: string): Promise<PrestamoListItem> {
+    const cacheKey = `prestamo_${id}`;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<RawPrestamo>(`${this.base}/${id}`).pipe(map(mapPrestamo)),
+      );
+      this.cache.set(cacheKey, res);
+      return res;
+    } catch {
+      const cached = this.cache.getStale<PrestamoListItem>(cacheKey);
+      if (cached) return cached;
+      throw new Error('Sin conexión y sin datos cacheados del préstamo.');
+    }
   }
 
   crear(dto: CrearPrestamoDto): Promise<PrestamoListItem> {
@@ -80,10 +100,17 @@ export class PrestamosApiService {
     return firstValueFrom(this.http.post<SimulacionResponse>(`${this.base}/simular`, dto));
   }
 
-  cuotas(id: string): Promise<CuotaPrestamo[]> {
-    return firstValueFrom(
-      this.http.get<Record<string, unknown>[]>(`${this.base}/${id}/cuotas`).pipe(map(res => res.map(mapCuota))),
-    );
+  async cuotas(id: string): Promise<CuotaPrestamo[]> {
+    const cacheKey = `prestamo_cuotas_${id}`;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<Record<string, unknown>[]>(`${this.base}/${id}/cuotas`).pipe(map(r => r.map(mapCuota))),
+      );
+      this.cache.set(cacheKey, res);
+      return res;
+    } catch {
+      return this.cache.getStale<CuotaPrestamo[]>(cacheKey) ?? [];
+    }
   }
 
   editar(id: string, dto: EditarPrestamoDto): Promise<PrestamoListItem> {

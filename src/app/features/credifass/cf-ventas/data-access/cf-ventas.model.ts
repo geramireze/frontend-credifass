@@ -60,6 +60,7 @@ export interface CfVenta {
   tipo: TipoVenta;
   estado: EstadoVenta;
   fechaVenta: string;
+  observaciones?: string | null;
   subtotalVenta: string;
   descuentoTotal: string;
   gananciaTotal: string;
@@ -95,10 +96,17 @@ export interface CfVentasState {
   error: string | null;
 }
 
+export interface ActualizarVentaDto {
+  tipo?: 'contado' | 'abono';
+  fechaVenta?: string;
+  observaciones?: string | null;
+}
+
 export interface CrearVentaDto {
   clienteId: string;
   lineas: LineaVenta[];
   tipo: TipoVenta;
+  fechaVenta?: string;
   planCuotas?: { nCuotas: number; fechaInicio: string; intervalo: IntervaloVenta };
   reservaId?: string;
   notas?: string;

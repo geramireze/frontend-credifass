@@ -11,11 +11,78 @@
         <h1 class="text-xl font-bold text-gray-900">Venta {{ v.numeroVenta }}</h1>
         <p class="text-sm text-gray-500">{{ v.clienteNombre }} · {{ v.fechaVenta | date:'dd/MM/yyyy' }}</p>
       </div>
-      <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold capitalize"
-            [class]="v.estado === 'pagada' ? 'bg-green-100 text-green-800' : v.estado === 'activa' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'">
-        {{ v.estado }}
-      </span>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold capitalize"
+              [class]="v.estado === 'pagada' ? 'bg-green-100 text-green-800' : v.estado === 'activa' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'">
+          {{ v.estado }}
+        </span>
+        @if (v.estado !== 'anulada' && !editando()) {
+          <button (click)="abrirEditor()"
+                  class="rounded-lg bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400">
+            Editar
+          </button>
+        }
+      </div>
     </div>
+
+    <!-- Panel de edición inline -->
+    @if (editando()) {
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-4" role="region" aria-label="Editar venta">
+        <h3 class="font-semibold text-amber-800">Editar venta</h3>
+
+        @if (errorEdit()) {
+          <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700" role="alert" aria-live="polite">
+            {{ errorEdit() }}
+          </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          @if (v.tipo !== 'cuotas') {
+            <div>
+              <p class="block text-sm font-medium text-gray-700 mb-2">Tipo</p>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="edit-tipo" value="contado"
+                         [ngModel]="editTipo()" (ngModelChange)="editTipo.set($event)"
+                         class="text-amber-600 focus:ring-amber-500" />
+                  Contado
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="edit-tipo" value="abono"
+                         [ngModel]="editTipo()" (ngModelChange)="editTipo.set($event)"
+                         class="text-amber-600 focus:ring-amber-500" />
+                  Abono
+                </label>
+              </div>
+            </div>
+          }
+          <div>
+            <label for="edit-fecha-venta" class="block text-sm font-medium text-gray-700 mb-1">Fecha de venta</label>
+            <input id="edit-fecha-venta" type="date"
+                   [ngModel]="editFechaVenta()" (ngModelChange)="editFechaVenta.set($event)"
+                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="edit-observaciones" class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+            <input id="edit-observaciones" type="text"
+                   [ngModel]="editObservaciones()" (ngModelChange)="editObservaciones.set($event)"
+                   placeholder="Opcional"
+                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button (click)="guardarEdicion()" [disabled]="guardandoEdit()"
+                  class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            {{ guardandoEdit() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+          <button (click)="cancelarEditor()" [disabled]="guardandoEdit()"
+                  class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    }
 
     <!-- Resumen financiero -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -106,13 +173,19 @@
         @if (v.estado !== 'anulada' && v.estado !== 'pagada') {
           <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-3">
             <h3 class="text-sm font-semibold text-blue-800">Registrar abono</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label for="monto-abono" class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
                 <input id="monto-abono" type="number" min="1"
-                       [ngModel]="montoAbono()" (ngModelChange)="montoAbono.set($event)"
+                       [ngModel]="montoAbono()" (ngModelChange)="montoAbono.set(String($event ?? ''))"
                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                        placeholder="0" />
+              </div>
+              <div>
+                <label for="fecha-abono" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                <input id="fecha-abono" type="date"
+                       [ngModel]="fechaAbono()" (ngModelChange)="fechaAbono.set($event)"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label for="medio-abono" class="block text-sm font-medium text-gray-700 mb-1">Medio de pago</label>
@@ -171,7 +244,7 @@
           <div>
             <label for="monto-pago" class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
             <input id="monto-pago" type="number" min="1"
-                   [ngModel]="montoPago()" (ngModelChange)="montoPago.set($event)"
+                   [ngModel]="montoPago()" (ngModelChange)="montoPago.set(String($event ?? ''))"
                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                    aria-describedby="monto-hint" />
             <p id="monto-hint" class="text-xs text-gray-500 mt-1">Máximo: {{ cuota.saldoCuota | cop }}</p>

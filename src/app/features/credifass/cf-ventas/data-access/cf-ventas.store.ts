@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { CfVentasApi } from './cf-ventas-api';
-import type { CfVentasState, CfVentasFiltros, CrearVentaDto, RegistrarPagoDto, RegistrarAbonoDto, IntervaloVenta } from './cf-ventas.model';
+import type { CfVentasState, CfVentasFiltros, ActualizarVentaDto, CrearVentaDto, RegistrarPagoDto, RegistrarAbonoDto, IntervaloVenta } from './cf-ventas.model';
 
 const inicial: CfVentasState = {
   items: [],
@@ -84,6 +84,18 @@ export const CfVentasStore = signalStore(
       const idempotencyKey = crypto.randomUUID();
       await api.registrarAbono(ventaId, dto, idempotencyKey);
       await this.cargarDetalle(ventaId);
+    },
+
+    async actualizar(id: string, dto: ActualizarVentaDto): Promise<void> {
+      patchState(store, { loading: true, error: null });
+      try {
+        await api.actualizar(id, dto);
+        await this.cargarDetalle(id);
+        patchState(store, { loading: false });
+      } catch (err: unknown) {
+        patchState(store, { loading: false });
+        throw err;
+      }
     },
 
     limpiarSimulacion(): void {

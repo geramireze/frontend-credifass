@@ -82,6 +82,47 @@
           </div>
         }
 
+        <!-- Stock actual + ajuste solo en edición -->
+        @if (modoEdicion()) {
+          <div class="sm:col-span-2">
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold text-gray-700">Inventario actual</span>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold"
+                      [class]="stockActual() <= 0 ? 'bg-red-100 text-red-700' : stockActual() <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'">
+                  <app-icon name="package" [size]="14" />
+                  {{ stockActual() }} unidades disponibles
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="app-label" for="ajuste-stock">Ajuste de unidades</label>
+                  <input id="ajuste-stock" type="number" formControlName="ajusteStock"
+                         class="app-input"
+                         placeholder="Ej. +5 para ingresar, -2 para retirar" />
+                  <p class="text-xs text-gray-500 mt-1">
+                    Positivo = ingreso · Negativo = retiro · 0 = sin cambio
+                  </p>
+                </div>
+                <div>
+                  <label class="app-label" for="motivo-ajuste">
+                    Motivo del ajuste
+                    @if (form.get('ajusteStock')?.value !== 0) { <span class="text-status-error-fg">*</span> }
+                  </label>
+                  <input id="motivo-ajuste" type="text" formControlName="motivoAjuste"
+                         class="app-input"
+                         [class.border-status-error]="campo('motivoAjuste')"
+                         placeholder="Ej. Devolución proveedor, merma…" />
+                  @if (campo('motivoAjuste')) {
+                    <p class="text-xs text-status-error-fg mt-1">El motivo es requerido al ajustar el stock.</p>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Descripción -->
         <div class="sm:col-span-2">
           <label class="app-label" for="desc">Descripción</label>

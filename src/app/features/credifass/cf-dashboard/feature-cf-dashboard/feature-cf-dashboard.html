@@ -22,6 +22,68 @@
       </div>
     </div>
 
+    <!-- ── UTILIDADES ───────────────────────────────── -->
+    <section aria-labelledby="util-titulo">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-100">
+          <app-icon name="trending-up" [size]="14" class="text-teal-600" />
+        </div>
+        <h2 id="util-titulo" class="text-sm font-semibold uppercase tracking-wide text-gray-700">Utilidades</h2>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+        <!-- Utilidad realizada -->
+        <div class="rounded-xl bg-teal-600 p-4 text-white shadow-sm">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wide text-teal-100">Utilidad realizada</p>
+              <p class="mt-1 text-2xl font-bold tabular-nums">{{ d.ventas.historico.ganancia | cop }}</p>
+              <p class="mt-0.5 text-xs text-teal-200">Ganancia acumulada en ventas</p>
+            </div>
+            <app-icon name="badge-dollar-sign" [size]="32" class="text-teal-300 opacity-60" />
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2 border-t border-teal-500 pt-3">
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-teal-200">Hoy</p>
+              <p class="text-sm font-semibold tabular-nums">{{ d.ventas.hoy.ganancia | cop }}</p>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-teal-200">Semana</p>
+              <p class="text-sm font-semibold tabular-nums">{{ d.ventas.semana.ganancia | cop }}</p>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-teal-200">Mes</p>
+              <p class="text-sm font-semibold tabular-nums">{{ d.ventas.mes.ganancia | cop }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Utilidad por vender -->
+        <div class="rounded-xl bg-violet-600 p-4 text-white shadow-sm">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wide text-violet-100">Utilidad por vender</p>
+              <p class="mt-1 text-2xl font-bold tabular-nums">{{ d.inventario.margenPotencial | cop }}</p>
+              <p class="mt-0.5 text-xs text-violet-200">Margen en inventario disponible</p>
+            </div>
+            <app-icon name="package" [size]="32" class="text-violet-300 opacity-60" />
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2 border-t border-violet-500 pt-3">
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-violet-200">Invertido</p>
+              <p class="text-sm font-semibold tabular-nums">{{ d.inventario.totalInvertido | cop }}</p>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-violet-200">Valor venta</p>
+              <p class="text-sm font-semibold tabular-nums">{{ d.inventario.valorInventarioVenta | cop }}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- ── INVENTARIO ────────────────────────────────── -->
     <section aria-labelledby="inv-titulo">
       <div class="flex items-center gap-2 mb-3">

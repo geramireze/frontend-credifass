@@ -36,6 +36,25 @@
     </div>
   }
 
+  <!-- Pago guardado offline -->
+  @if (store.pagoOffline()) {
+    <div role="status" class="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+      <app-icon name="wifi-off" [size]="16" class="mt-0.5 shrink-0" />
+      <div>
+        <p class="font-medium text-sm">Sin conexión — pago guardado localmente</p>
+        <p class="text-xs mt-0.5">Se enviará automáticamente cuando vuelva la señal.</p>
+      </div>
+    </div>
+  }
+
+  <!-- Pendientes offline -->
+  @if (store.pendientesOffline() > 0) {
+    <div class="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+      <app-icon name="clock" [size]="15" class="shrink-0" />
+      <p class="text-sm">{{ store.pendientesOffline() }} pago{{ store.pendientesOffline() !== 1 ? 's' : '' }} pendiente{{ store.pendientesOffline() !== 1 ? 's' : '' }} de sincronizar</p>
+    </div>
+  }
+
   @if (store.ruta(); as r) {
     <!-- KPI cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

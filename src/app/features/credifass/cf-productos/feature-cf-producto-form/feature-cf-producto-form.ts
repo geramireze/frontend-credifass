@@ -26,15 +26,18 @@ export class FeatureCfProductoForm implements OnInit {
   protected readonly categorias   = signal<CfCategoria[]>([]);
   protected readonly modoEdicion  = signal(false);
   protected readonly productoId   = signal<string | null>(null);
+  protected readonly stockActual  = signal<number>(0);
 
   protected readonly form = this.fb.group({
-    nombre:       ['', [Validators.required, Validators.minLength(2)]],
-    descripcion:  [''],
-    categoriaId:  [''],
-    valorCompra:  ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-    valorVenta:   ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-    stockInicial: [0, [Validators.required, Validators.min(0)]],
-    stockMinimo:  [1, [Validators.required, Validators.min(0)]],
+    nombre:        ['', [Validators.required, Validators.minLength(2)]],
+    descripcion:   [''],
+    categoriaId:   [''],
+    valorCompra:   ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+    valorVenta:    ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+    stockInicial:  [0, [Validators.required, Validators.min(0)]],
+    stockMinimo:   [1, [Validators.required, Validators.min(0)]],
+    ajusteStock:   [0 as number],
+    motivoAjuste:  [''],
   });
 
   async ngOnInit(): Promise<void> {
@@ -54,6 +57,7 @@ export class FeatureCfProductoForm implements OnInit {
   private async cargarProducto(id: string): Promise<void> {
     try {
       const p = await this.productosApi.obtener(id);
+      this.stockActual.set(p.stockDisponible);
       this.form.patchValue({
         nombre:       p.nombre,
         descripcion:  p.descripcion ?? '',
@@ -61,8 +65,9 @@ export class FeatureCfProductoForm implements OnInit {
         valorCompra:  p.valorCompra,
         valorVenta:   p.valorVenta,
         stockMinimo:  p.stockMinimo ?? 1,
+        ajusteStock:  0,
+        motivoAjuste: '',
       });
-      // El stock disponible se ajusta por operación separada, no aquí
       this.form.get('stockInicial')?.disable();
     } catch {
       this.error.set('No se pudo cargar el producto.');
@@ -76,15 +81,24 @@ export class FeatureCfProductoForm implements OnInit {
 
   async onSubmit(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+
+    const v = this.form.getRawValue();
+    const ajuste = Number(v.ajusteStock ?? 0);
+
+    if (ajuste !== 0 && !v.motivoAjuste?.trim()) {
+      this.form.get('motivoAjuste')?.markAsTouched();
+      this.error.set('El motivo del ajuste de stock es requerido.');
+      return;
+    }
+
     this.guardando.set(true);
     this.error.set(null);
 
-    const v = this.form.getRawValue();
-
     try {
       if (this.modoEdicion()) {
+        const id = this.productoId()!;
         await this.store.editar(
-          this.productoId()!,
+          id,
           {
             nombre:      v.nombre ?? undefined,
             descripcion: v.descripcion || undefined,
@@ -95,6 +109,9 @@ export class FeatureCfProductoForm implements OnInit {
             valorVenta:  String(v.valorVenta!),
           },
         );
+        if (ajuste !== 0) {
+          await this.store.ajustarStock(id, ajuste, v.motivoAjuste!.trim());
+        }
       } else {
         await this.store.crear({
           nombre:       v.nombre!,

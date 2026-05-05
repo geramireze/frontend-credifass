@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import type {
+  ActualizarVentaDto,
   CfVenta,
   CfVentasFiltros,
   CrearVentaDto,
@@ -70,6 +71,10 @@ export class CfVentasApi {
 
   obtenerPagos(id: string): Promise<CfPagoCuota[]> {
     return firstValueFrom(this.http.get<CfPagoCuota[]>(`${this.base}/${id}/pagos`));
+  }
+
+  actualizar(id: string, dto: ActualizarVentaDto): Promise<CfVenta> {
+    return firstValueFrom(this.http.patch<CfVenta>(`${this.base}/${id}`, dto));
   }
 
   crear(dto: CrearVentaDto): Promise<CfVenta> {
