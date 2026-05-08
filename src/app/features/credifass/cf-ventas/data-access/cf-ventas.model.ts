@@ -15,8 +15,10 @@ export interface CuotaSimulada {
 }
 
 export interface SimulacionCuotas {
-  cuotas: CuotaSimulada[];
+  cronograma: CuotaSimulada[];
   totalVenta: string;
+  nCuotas: number;
+  cuotaBase: string;
   residuo: string;
 }
 
@@ -61,9 +63,10 @@ export interface CfVenta {
   estado: EstadoVenta;
   fechaVenta: string;
   observaciones?: string | null;
+  subtotalCompra: string;
   subtotalVenta: string;
-  descuentoTotal: string;
   gananciaTotal: string;
+  totalPagado: string;
   saldoPendiente: string;
   nCuotas: number | null;
   intervalo: IntervaloVenta | null;

@@ -66,6 +66,26 @@
           }
         </div>
 
+        <!-- Alerta margen negativo / indicador de margen -->
+        @if (margenInfo(); as info) {
+          <div class="sm:col-span-2">
+            @if (info.bajoCompra) {
+              <div role="alert" class="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <app-icon name="alert-triangle" [size]="16" class="mt-0.5 shrink-0 text-amber-500" />
+                <span>
+                  <strong>¡Venta por debajo del costo!</strong> El valor de venta es menor al de compra.
+                  Ganancia por unidad: <strong>$ {{ info.margen | number:'1.0-0' }}</strong> ({{ info.pct }}%).
+                  Las utilidades se registrarán negativas.
+                </span>
+              </div>
+            } @else {
+              <p class="text-xs text-green-700 bg-green-50 rounded-lg px-4 py-2 sm:col-span-2">
+                Margen por unidad: <strong>$ {{ info.margen | number:'1.0-0' }}</strong> ({{ info.pct }}%)
+              </p>
+            }
+          </div>
+        }
+
         <!-- Stock mínimo -->
         <div>
           <label class="app-label" for="stmin">Stock mínimo</label>

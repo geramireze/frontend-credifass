@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppIconComponent } from '../../../../shared/components/icon/icon';
@@ -9,7 +11,7 @@ import type { CfCategoria } from '../../cf-categorias/data-access/cf-categorias.
 
 @Component({
   selector: 'app-feature-cf-producto-form',
-  imports: [ReactiveFormsModule, RouterLink, AppIconComponent],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink, AppIconComponent],
   templateUrl: './feature-cf-producto-form.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -38,6 +40,18 @@ export class FeatureCfProductoForm implements OnInit {
     stockMinimo:   [1, [Validators.required, Validators.min(0)]],
     ajusteStock:   [0 as number],
     motivoAjuste:  [''],
+  });
+
+  private readonly formValues = toSignal(this.form.valueChanges, { initialValue: this.form.value });
+
+  protected readonly margenInfo = computed(() => {
+    const v = this.formValues();
+    const compra = parseFloat(String(v.valorCompra ?? '0')) || 0;
+    const venta  = parseFloat(String(v.valorVenta  ?? '0')) || 0;
+    if (compra <= 0 || venta <= 0) return null;
+    const margen = venta - compra;
+    const pct    = ((margen / compra) * 100).toFixed(1);
+    return { margen, pct: Number(pct), bajoCompra: margen < 0 };
   });
 
   async ngOnInit(): Promise<void> {

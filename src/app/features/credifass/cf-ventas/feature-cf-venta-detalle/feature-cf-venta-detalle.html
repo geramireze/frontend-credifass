@@ -92,7 +92,7 @@
       </div>
       <div class="rounded-xl bg-white p-3 ring-1 ring-gray-200 text-center">
         <p class="text-xs text-gray-500">Saldo pendiente</p>
-        <p class="font-bold" [class]="v.saldoPendiente !== '0' ? 'text-orange-700' : 'text-green-700'">
+        <p class="font-bold" [class]="(+v.saldoPendiente) > 0 ? 'text-orange-700' : 'text-green-700'">
           {{ v.saldoPendiente | cop }}
         </p>
       </div>
