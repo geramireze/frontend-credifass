@@ -53,6 +53,17 @@ export interface CfAbonoVenta {
   createdAt: string;
 }
 
+export interface CfLineaVenta {
+  id: string;
+  productoId: string;
+  productoNombre: string;
+  cantidad: number;
+  valorCompraUnitario: string;
+  valorVentaUnitario: string;
+  gananciaUnitaria: string;
+  gananciaLinea: string;
+}
+
 export interface CfVenta {
   id: string;
   numeroVenta: string;
@@ -70,6 +81,7 @@ export interface CfVenta {
   saldoPendiente: string;
   nCuotas: number | null;
   intervalo: IntervaloVenta | null;
+  lineas?: CfLineaVenta[];
   cuotas?: CfCuota[];
   pagos?: CfPagoCuota[];
   abonos?: CfAbonoVenta[];

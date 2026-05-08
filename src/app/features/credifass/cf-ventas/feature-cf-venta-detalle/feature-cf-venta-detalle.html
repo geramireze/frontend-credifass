@@ -106,6 +106,35 @@
       </div>
     </div>
 
+    <!-- Productos vendidos -->
+    @if (v.lineas && v.lineas.length > 0) {
+      <section aria-labelledby="lineas-titulo">
+        <h2 id="lineas-titulo" class="mb-3 font-semibold text-gray-700">Productos</h2>
+        <div class="overflow-x-auto rounded-xl ring-1 ring-gray-200">
+          <table class="min-w-full divide-y divide-gray-100 bg-white text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-4 py-2 text-left font-semibold text-gray-600">Producto</th>
+                <th scope="col" class="px-4 py-2 text-right font-semibold text-gray-600">Cant.</th>
+                <th scope="col" class="px-4 py-2 text-right font-semibold text-gray-600">P. venta</th>
+                <th scope="col" class="px-4 py-2 text-right font-semibold text-gray-600">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              @for (l of v.lineas; track l.id) {
+                <tr>
+                  <td class="px-4 py-2 text-gray-900">{{ l.productoNombre }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-gray-600">{{ l.cantidad }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-gray-700">{{ l.valorVentaUnitario | cop }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums font-semibold text-gray-800">{{ (+l.valorVentaUnitario * l.cantidad) | cop }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
     <!-- Plan de cuotas -->
     @if (v.cuotas && v.cuotas.length > 0) {
       <section aria-labelledby="cuotas-titulo">

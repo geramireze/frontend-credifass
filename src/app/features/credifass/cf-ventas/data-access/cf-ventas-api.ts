@@ -60,6 +60,16 @@ export class CfVentasApi {
           ...v,
           clienteNombre: v.cliente?.nombre ?? '',
           numeroVenta: v.numero != null ? String(v.numero) : '',
+          lineas: (v.detalles ?? []).map((d: any) => ({
+            id: d.id,
+            productoId: d.productoId,
+            productoNombre: d.producto?.nombre ?? '',
+            cantidad: d.cantidad,
+            valorCompraUnitario: d.valorCompraUnitario,
+            valorVentaUnitario: d.valorVentaUnitario,
+            gananciaUnitaria: d.gananciaUnitaria,
+            gananciaLinea: d.gananciaLinea,
+          })),
         } as CfVenta)),
       ),
     );
