@@ -17,6 +17,12 @@
     <div role="alert" class="alert-error mb-6">
       <app-icon name="alert-circle" [size]="16" class="shrink-0" />
       <span>{{ error() }}</span>
+      @if (clienteInactivoId()) {
+        <a [routerLink]="['/clientes', clienteInactivoId()]"
+           class="ml-2 underline font-semibold whitespace-nowrap">
+          Ver cliente y reactivar
+        </a>
+      }
     </div>
   }
 
@@ -37,7 +43,7 @@
         <!-- Documento -->
         <div>
           <label class="app-label" for="documento">Número de documento *</label>
-          <input id="documento" type="text" formControlName="documento" class="app-input"
+          <input id="documento" type="number" inputmode="numeric" step="1" min="0" formControlName="documento" class="app-input"
                  [class.border-status-error]="campo('documento')" placeholder="1234567890" />
           @if (campo('documento')) {
             <p class="text-xs text-status-error-fg mt-1">El documento es requerido</p>
@@ -47,7 +53,7 @@
         <!-- Teléfono -->
         <div>
           <label class="app-label" for="telefono">Teléfono *</label>
-          <input id="telefono" type="tel" formControlName="telefono" class="app-input"
+          <input id="telefono" type="number" inputmode="numeric" step="1" min="0" formControlName="telefono" class="app-input"
                  [class.border-status-error]="campo('telefono')" placeholder="3001234567" />
           @if (campo('telefono')) {
             <p class="text-xs text-status-error-fg mt-1">El teléfono es requerido</p>

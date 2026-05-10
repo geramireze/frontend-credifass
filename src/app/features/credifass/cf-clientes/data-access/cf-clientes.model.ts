@@ -8,9 +8,11 @@ export interface CfCliente {
   telefono: string;
   correo: string | null;
   direccion: string | null;
-  notas: string | null;
+  ciudad: string | null;
+  observaciones: string | null;
   activo: boolean;
   saldoPendiente?: string;
+  totalVentas?: number;
   cuotasVencidas?: number;
 }
 
@@ -32,6 +34,25 @@ export interface CfClientesState {
   error: string | null;
 }
 
+export interface CfAbonoCliente {
+  id: string;
+  ventaId: string;
+  ventaNumero: string;
+  monto: string;
+  medioPago: string;
+  nota: string | null;
+  fechaAbono: string;
+  createdAt: string;
+}
+
+export interface CfProductoComprado {
+  productoId: string;
+  productoNombre: string;
+  totalCantidad: number;
+  totalGastado: string;
+  cantidadVentas: number;
+}
+
 export interface CrearCfClienteDto {
   tipoIdentificacion: TipoIdentificacion;
   numeroIdentificacion: string;
@@ -39,5 +60,5 @@ export interface CrearCfClienteDto {
   telefono: string;
   correo?: string;
   direccion?: string;
-  notas?: string;
+  observaciones?: string;
 }

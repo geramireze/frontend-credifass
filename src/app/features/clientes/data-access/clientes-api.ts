@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { ClienteListItem, ClienteDetalle, ClientesListResponse, ClientesFiltros, CrearClienteDto } from './clientes.model';
+import { ClienteListItem, ClienteDetalle, ClientesListResponse, ClientesFiltros, CrearClienteDto, CompraProducto, HistorialPrestamo, VentaCliente, PagoCliente } from './clientes.model';
 import { OfflineCache } from '../../../core/offline/offline-cache';
 
 type RawListItem = Record<string, unknown>;
@@ -28,6 +28,7 @@ function mapDetalle(raw: RawListItem): ClienteDetalle {
     notas: (raw['notas'] as string | null) ?? null,
     referencias: (raw['referencias'] as ClienteDetalle['referencias']) ?? [],
     historial_mora: Number(raw['historialMora'] ?? 0),
+    saldo_mercancia: Number(raw['saldoMercancia'] ?? 0),
   };
 }
 
@@ -91,5 +92,25 @@ export class ClientesApiService {
 
   reactivar(id: string): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/reactivar`, {}));
+  }
+
+  pagosCliente(id: string): Promise<PagoCliente[]> {
+    return firstValueFrom(this.http.get<PagoCliente[]>(`${this.base}/${id}/pagos-cliente`));
+  }
+
+  historialPrestamos(id: string): Promise<HistorialPrestamo[]> {
+    return firstValueFrom(
+      this.http.get<{ prestamos: HistorialPrestamo[] }>(`${this.base}/${id}/historial`).pipe(
+        map(r => r.prestamos ?? []),
+      ),
+    );
+  }
+
+  ventas(id: string): Promise<VentaCliente[]> {
+    return firstValueFrom(this.http.get<VentaCliente[]>(`${this.base}/${id}/ventas`));
+  }
+
+  compras(id: string): Promise<CompraProducto[]> {
+    return firstValueFrom(this.http.get<CompraProducto[]>(`${this.base}/${id}/compras`));
   }
 }

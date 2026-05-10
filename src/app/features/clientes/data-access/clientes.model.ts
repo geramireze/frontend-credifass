@@ -17,6 +17,7 @@ export interface ClienteDetalle extends ClienteListItem {
   notas: string | null;
   referencias: Referencia[];
   historial_mora: number;
+  saldo_mercancia: number;
 }
 
 export interface Referencia {
@@ -49,6 +50,45 @@ export interface CrearClienteDto {
   ciudad: string;
   notas?: string;
   referencias?: { nombre: string; telefono: string; parentesco: string }[];
+}
+
+export interface HistorialPrestamo {
+  id: string;
+  fechaInicio: string;
+  montoPrestado: string;
+  estado: string;
+  cuotasPagadas: number;
+  cuotasTotales: number;
+  saldoPendiente: string;
+}
+
+export interface PagoCliente {
+  id: string;
+  fecha: string;
+  monto: string;
+  tipo: 'prestamo' | 'mercancia';
+  referencia: string;
+  medioPago: string;
+  anulado: boolean;
+}
+
+export interface VentaCliente {
+  id: string;
+  numero: number;
+  fechaVenta: string;
+  tipo: string;
+  estado: string;
+  subtotalVenta: string;
+  saldoPendiente: string;
+  totalItems: number;
+}
+
+export interface CompraProducto {
+  productoId: string;
+  productoNombre: string;
+  totalCantidad: number;
+  totalGastado: string;
+  cantidadVentas: number;
 }
 
 export interface ClientesState {

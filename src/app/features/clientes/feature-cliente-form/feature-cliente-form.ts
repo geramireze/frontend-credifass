@@ -20,11 +20,12 @@ export class FeatureClienteForm implements OnInit {
   protected readonly esEdicion = signal(false);
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly clienteInactivoId = signal<string | null>(null);
 
   protected readonly form = this.fb.group({
     nombre:    ['', [Validators.required, Validators.minLength(2)]],
-    documento: ['', [Validators.required, Validators.minLength(6)]],
-    telefono:  ['', [Validators.required]],
+    documento: [null as number | null, [Validators.required, Validators.min(100000)]],
+    telefono:  [null as number | null, [Validators.required, Validators.min(1000000000)]],
     direccion: ['', [Validators.required]],
     ciudad:    ['', [Validators.required]],
     notas:     [''],
@@ -50,8 +51,8 @@ export class FeatureClienteForm implements OnInit {
     if (c) {
       this.form.patchValue({
         nombre: c.nombre,
-        documento: c.documento,
-        telefono: c.telefono,
+        documento: c.documento ? Number(c.documento) : null,
+        telefono: c.telefono ? Number(c.telefono) : null,
         direccion: c.direccion ?? '',
         ciudad: c.ciudad,
         notas: c.notas ?? '',
@@ -82,8 +83,8 @@ export class FeatureClienteForm implements OnInit {
     const raw = this.form.getRawValue();
     const dto = {
       nombre:     raw.nombre ?? '',
-      documento:  raw.documento ?? '',
-      telefono:   raw.telefono ?? '',
+      documento:  raw.documento != null ? String(raw.documento) : '',
+      telefono:   raw.telefono != null ? String(raw.telefono) : '',
       direccion:  raw.direccion ?? '',
       ciudad:     raw.ciudad ?? '',
       notas:      raw.notas || undefined,
@@ -99,9 +100,17 @@ export class FeatureClienteForm implements OnInit {
         await this.router.navigate(['/clientes']);
       }
     } catch (err: unknown) {
-      const body = (err as { error?: { message?: string | string[] } })?.error;
-      const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
-      this.error.set(msg ?? 'No se pudo guardar el cliente. Verifica los datos e intenta de nuevo.');
+      const body = (err as { error?: { code?: string; clienteId?: string; message?: string | string[] } })?.error;
+      this.clienteInactivoId.set(null);
+      if (body?.code === 'CLIENTE_INACTIVO_DOCUMENTO') {
+        this.clienteInactivoId.set(body.clienteId ?? null);
+        this.error.set('Este documento pertenece a un cliente inactivo.');
+      } else if (body?.code === 'DOCUMENT_TAKEN') {
+        this.error.set('Ya existe un cliente activo con ese número de documento.');
+      } else {
+        const msg = Array.isArray(body?.message) ? body!.message[0] : body?.message;
+        this.error.set(msg ?? 'No se pudo guardar el cliente. Verifica los datos e intenta de nuevo.');
+      }
       this.loading.set(false);
     }
   }

@@ -36,7 +36,7 @@ export class FeatureCfClienteForm implements OnInit {
     telefono:            ['', [Validators.required, Validators.pattern(/^\d{7,15}$/)]],
     correo:              ['', Validators.email],
     direccion:           [''],
-    notas:               [''],
+    observaciones:               [''],
   });
 
   ngOnInit(): void {
@@ -58,7 +58,7 @@ export class FeatureCfClienteForm implements OnInit {
         telefono:             c.telefono,
         correo:               c.correo ?? '',
         direccion:            c.direccion ?? '',
-        notas:                c.notas ?? '',
+        observaciones:                c.observaciones ?? '',
       });
     }
   }
@@ -81,7 +81,7 @@ export class FeatureCfClienteForm implements OnInit {
       telefono:             val.telefono!,
       correo:               val.correo || undefined,
       direccion:            val.direccion || undefined,
-      notas:                val.notas || undefined,
+      observaciones:                val.observaciones || undefined,
     };
 
     try {

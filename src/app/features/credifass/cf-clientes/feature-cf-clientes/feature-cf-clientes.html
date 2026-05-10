@@ -37,6 +37,7 @@
             <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Nombre</th>
             <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Identificación</th>
             <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Teléfono</th>
+            <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Compras</th>
             <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Saldo</th>
             <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Estado</th>
             <th scope="col" class="px-4 py-3"></th>
@@ -48,8 +49,17 @@
               <td class="px-4 py-3 font-medium text-gray-900">{{ c.nombreCompleto }}</td>
               <td class="px-4 py-3 text-gray-500">{{ c.tipoIdentificacion }} {{ c.numeroIdentificacion }}</td>
               <td class="px-4 py-3 text-gray-500">{{ c.telefono }}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-gray-500">
+                @if ((c.totalVentas ?? 0) > 0) {
+                  <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                    {{ c.totalVentas }}
+                  </span>
+                } @else {
+                  <span class="text-xs text-gray-300">—</span>
+                }
+              </td>
               <td class="px-4 py-3 text-right tabular-nums"
-                  [class]="(c.cuotasVencidas ?? 0) > 0 ? 'text-red-700 font-semibold' : 'text-gray-700'">
+                  [class]="+( c.saldoPendiente ?? 0) > 0 ? 'text-amber-700 font-semibold' : 'text-gray-500'">
                 {{ c.saldoPendiente | cop }}
               </td>
               <td class="px-4 py-3">
@@ -59,10 +69,16 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-right">
-                <a [routerLink]="['../clientes', c.id, 'editar']"
-                   class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
-                  Editar
-                </a>
+                <div class="flex items-center justify-end gap-3">
+                  <a [routerLink]="['../clientes', c.id]"
+                     class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                    Ver
+                  </a>
+                  <a [routerLink]="['../clientes', c.id, 'editar']"
+                     class="text-xs text-gray-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                    Editar
+                  </a>
+                </div>
               </td>
             </tr>
           }
@@ -86,13 +102,27 @@
             </span>
           </div>
           <div class="mt-2 flex items-center justify-between">
-            <span class="text-sm" [class]="(c.cuotasVencidas ?? 0) > 0 ? 'text-red-700 font-semibold' : 'text-gray-700'">
-              {{ c.saldoPendiente | cop }}
-            </span>
-            <a [routerLink]="['../clientes', c.id, 'editar']"
-               class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
-              Editar
-            </a>
+            <div class="flex items-center gap-2">
+              @if ((c.totalVentas ?? 0) > 0) {
+                <span class="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                  {{ c.totalVentas }} compras
+                </span>
+              }
+              <span class="text-sm tabular-nums"
+                    [class]="+(c.saldoPendiente ?? 0) > 0 ? 'text-amber-700 font-semibold' : 'text-gray-500'">
+                {{ c.saldoPendiente | cop }}
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <a [routerLink]="['../clientes', c.id]"
+                 class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                Ver
+              </a>
+              <a [routerLink]="['../clientes', c.id, 'editar']"
+                 class="text-xs text-gray-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                Editar
+              </a>
+            </div>
           </div>
         </div>
       }

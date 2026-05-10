@@ -85,6 +85,14 @@ export interface PrestamosFiltros {
   pageSize?: number;
 }
 
+export interface PagoPrestamo {
+  id: string;
+  fecha: string;
+  monto: string;
+  medio: string;
+  anulado: boolean;
+}
+
 export interface PrestamosState {
   items: PrestamoListItem[];
   total: number;

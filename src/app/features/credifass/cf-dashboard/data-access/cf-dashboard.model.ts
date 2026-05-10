@@ -21,10 +21,12 @@ export interface DashboardCfResult {
     cuotasVencidasTotal: number;
     cuotasPendientesHoy: number;
     abonosHoy: string;
+    abonosSemana: string;
   };
   reservas: {
     activas: number;
     abonosHoy: string;
+    abonosSemana: string;
   };
 }
 

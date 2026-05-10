@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { SlicePipe } from '@angular/common';
+import { DatePipe, SlicePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PrestamosStore } from '../data-access/prestamos.store';
 import { PrestamosApiService } from '../data-access/prestamos-api';
 import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
-import { EstadoPrestamo, CuotaPrestamo, PrestamoListItem, FrecuenciaPago } from '../data-access/prestamos.model';
+import { EstadoPrestamo, CuotaPrestamo, PrestamoListItem, FrecuenciaPago, PagoPrestamo } from '../data-access/prestamos.model';
 import { UsuariosApiService } from '../../usuarios/data-access/usuarios-api';
 import { UsuarioListItem } from '../../usuarios/data-access/usuarios.model';
 
@@ -41,7 +41,7 @@ const CUOTA_LABELS: Record<CuotaPrestamo['estado'], string> = {
 
 @Component({
   selector: 'app-feature-prestamo-detalle',
-  imports: [RouterLink, CopPipe, AppIconComponent, SlicePipe, ReactiveFormsModule],
+  imports: [RouterLink, CopPipe, AppIconComponent, SlicePipe, DatePipe, ReactiveFormsModule],
   templateUrl: './feature-prestamo-detalle.html',
   styleUrl: './feature-prestamo-detalle.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +58,12 @@ export class FeaturePrestamoDetalle implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   protected readonly tabActivo = signal<'resumen' | 'cronograma' | 'pagos' | 'auditoria'>('cronograma');
+  protected readonly pagos = signal<PagoPrestamo[]>([]);
+  protected readonly pagosLoading = signal(false);
+  protected readonly totalPagado = computed(() =>
+    this.pagos().filter(p => !p.anulado).reduce((s, p) => s + Number(p.monto), 0),
+  );
+
   protected readonly mostrarPanelEditar = signal(false);
   protected readonly guardandoEdicion = signal(false);
   protected readonly errorEdicion = signal<string | null>(null);
@@ -105,6 +111,17 @@ export class FeaturePrestamoDetalle implements OnInit {
     this.usuariosApi.listar()
       .then((res) => this.cobradores.set(res.items.filter((u) => u.rol === 'cobrador' && u.activo)))
       .catch(() => {});
+  }
+
+  protected async setTab(tab: 'resumen' | 'cronograma' | 'pagos' | 'auditoria'): Promise<void> {
+    this.tabActivo.set(tab);
+    if (tab === 'pagos' && this.pagos().length === 0) {
+      const id = this.store.seleccionado()?.id;
+      if (!id) return;
+      this.pagosLoading.set(true);
+      this.pagos.set(await this.api.pagos(id).catch(() => []));
+      this.pagosLoading.set(false);
+    }
   }
 
   protected estadoLabel(e: string): string  { return ESTADO_LABELS[e as EstadoPrestamo] ?? e; }

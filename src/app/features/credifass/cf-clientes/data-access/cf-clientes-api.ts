@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
-import type { CfCliente, CfClientesFiltros, CrearCfClienteDto } from './cf-clientes.model';
+import type { CfAbonoCliente, CfCliente, CfClientesFiltros, CfProductoComprado, CrearCfClienteDto } from './cf-clientes.model';
 
 @Injectable({ providedIn: 'root' })
 export class CfClientesApi {
@@ -32,5 +32,13 @@ export class CfClientesApi {
 
   inactivar(id: string): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.base}/${id}`));
+  }
+
+  obtenerProductosComprados(id: string): Promise<CfProductoComprado[]> {
+    return firstValueFrom(this.http.get<CfProductoComprado[]>(`${this.base}/${id}/productos`));
+  }
+
+  obtenerAbonos(id: string): Promise<CfAbonoCliente[]> {
+    return firstValueFrom(this.http.get<CfAbonoCliente[]>(`${this.base}/${id}/abonos`));
   }
 }

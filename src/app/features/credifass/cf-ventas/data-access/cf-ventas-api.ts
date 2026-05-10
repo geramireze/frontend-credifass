@@ -103,6 +103,10 @@ export class CfVentasApi {
     return firstValueFrom(this.http.post<void>(`${this.base}/pagos/${pagoId}/anular`, { motivo }));
   }
 
+  anularAbono(abonoId: string, motivo: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.base}/abonos/${abonoId}/anular`, { motivo }));
+  }
+
   anular(id: string): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/${id}/anular`, {}));
   }

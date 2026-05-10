@@ -88,7 +88,7 @@
           type="button"
           role="tab"
           [attr.aria-selected]="tabActivo() === tab.id"
-          (click)="tabActivo.set($any(tab.id))"
+          (click)="setTab($any(tab.id))"
           class="flex items-center h-10 px-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
           [class.border-primary]="tabActivo() === tab.id"
           [class.text-primary]="tabActivo() === tab.id"
@@ -204,10 +204,81 @@
 
     <!-- TAB: Pagos -->
     @if (tabActivo() === 'pagos') {
-      <div class="card mt-4 p-8 text-center">
-        <app-icon name="banknote" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
-        <p class="text-sm text-app-muted-fg">Historial de pagos disponible en la sección Cobranza</p>
-      </div>
+      @if (pagosLoading()) {
+        <div class="card mt-4 p-6 animate-pulse space-y-3">
+          @for (_ of [1,2,3,4]; track $index) { <div class="h-11 bg-app-muted rounded"></div> }
+        </div>
+      } @else if (pagos().length === 0) {
+        <div class="card mt-4 p-10 text-center">
+          <app-icon name="banknote" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
+          <p class="text-sm text-app-muted-fg">Este préstamo no tiene pagos registrados.</p>
+        </div>
+      } @else {
+        <div class="card mt-4 overflow-hidden">
+          <!-- Desktop table -->
+          <table class="min-w-full divide-y divide-app-border text-sm hidden md:table">
+            <thead class="bg-app-muted/30">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Fecha</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Medio</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Monto</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-app-border bg-white">
+              @for (pg of pagos(); track pg.id) {
+                <tr class="hover:bg-app-muted/20 transition-colors" [class.opacity-50]="pg.anulado">
+                  <td class="px-4 py-3 text-app-fg tabular-nums">{{ pg.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td class="px-4 py-3 text-center text-app-fg-2 text-xs capitalize">{{ pg.medio }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums font-semibold"
+                      [class.text-app-fg]="!pg.anulado"
+                      [class.line-through]="pg.anulado">
+                    {{ +pg.monto | cop }}
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    @if (pg.anulado) {
+                      <span class="badge">Anulado</span>
+                    } @else {
+                      <span class="badge badge-success">Aplicado</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="bg-app-muted/30 border-t border-app-border">
+              <tr>
+                <td colspan="2" class="px-4 py-2 text-xs font-semibold text-app-muted-fg uppercase">Total cobrado</td>
+                <td class="px-4 py-2 text-right tabular-nums font-bold text-app-fg">{{ totalPagado() | cop }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden divide-y divide-app-border">
+            @for (pg of pagos(); track pg.id) {
+              <div class="p-4 flex justify-between items-center" [class.opacity-50]="pg.anulado">
+                <div>
+                  <p class="text-xs text-app-muted-fg tabular-nums">{{ pg.fecha | date:'dd/MM/yyyy' }}</p>
+                  <p class="text-xs text-app-muted-fg capitalize mt-0.5">{{ pg.medio }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="font-bold text-app-fg tabular-nums" [class.line-through]="pg.anulado">{{ +pg.monto | cop }}</p>
+                  @if (pg.anulado) {
+                    <span class="badge text-xs">Anulado</span>
+                  } @else {
+                    <span class="badge badge-success text-xs">Aplicado</span>
+                  }
+                </div>
+              </div>
+            }
+            <div class="p-3 bg-app-muted/30 flex justify-between text-xs">
+              <span class="text-app-muted-fg font-semibold uppercase">Total cobrado</span>
+              <span class="font-bold text-app-fg">{{ totalPagado() | cop }}</span>
+            </div>
+          </div>
+        </div>
+      }
     }
 
     <!-- TAB: Auditoría -->

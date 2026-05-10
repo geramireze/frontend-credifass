@@ -86,6 +86,16 @@ export const CfVentasStore = signalStore(
       await this.cargarDetalle(ventaId);
     },
 
+    async anularAbono(ventaId: string, abonoId: string, motivo: string): Promise<void> {
+      await api.anularAbono(abonoId, motivo);
+      await this.cargarDetalle(ventaId);
+    },
+
+    async anularPago(ventaId: string, pagoId: string, motivo: string): Promise<void> {
+      await api.anularPago(pagoId, motivo);
+      await this.cargarDetalle(ventaId);
+    },
+
     async actualizar(id: string, dto: ActualizarVentaDto): Promise<void> {
       patchState(store, { loading: true, error: null });
       try {

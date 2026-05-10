@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
-  PrestamosListResponse, PrestamoListItem, CuotaPrestamo,
+  PrestamosListResponse, PrestamoListItem, CuotaPrestamo, PagoPrestamo,
   SimulacionRequest, SimulacionResponse, CrearPrestamoDto, EditarPrestamoDto, PrestamosFiltros,
 } from './prestamos.model';
 import { OfflineCache } from '../../../core/offline/offline-cache';
@@ -117,6 +117,10 @@ export class PrestamosApiService {
     return firstValueFrom(
       this.http.patch<RawPrestamo>(`${this.base}/${id}`, dto).pipe(map(mapPrestamo)),
     );
+  }
+
+  pagos(id: string): Promise<PagoPrestamo[]> {
+    return firstValueFrom(this.http.get<PagoPrestamo[]>(`${this.base}/${id}/pagos`));
   }
 
   cancelar(id: string, motivo?: string): Promise<void> {

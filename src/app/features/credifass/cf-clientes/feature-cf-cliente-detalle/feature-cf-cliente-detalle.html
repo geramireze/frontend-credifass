@@ -1,0 +1,427 @@
+<div class="p-4 md:p-6 max-w-5xl mx-auto">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm mb-5" aria-label="Ruta de navegación">
+    <a routerLink="/credifass/clientes" class="text-blue-600 hover:underline">Clientes</a>
+    <span class="text-gray-400">›</span>
+    <span class="text-gray-500">{{ cliente()?.nombreCompleto ?? 'Detalle' }}</span>
+  </nav>
+
+  @if (loading()) {
+    <div class="rounded-2xl bg-white ring-1 ring-gray-200 p-6 animate-pulse space-y-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-full bg-gray-200 shrink-0"></div>
+        <div class="space-y-2 flex-1">
+          <div class="h-5 bg-gray-200 rounded w-1/3"></div>
+          <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+        </div>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="rounded-lg bg-red-50 p-4 text-red-700" role="alert">{{ error() }}</div>
+  } @else if (cliente(); as c) {
+
+    <!-- Header card -->
+    <div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm p-5 mb-0">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-13 h-13 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xl font-bold shrink-0">
+            {{ c.nombreCompleto[0] }}
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-gray-900">{{ c.nombreCompleto }}</h1>
+            <p class="text-sm text-gray-500 mt-0.5">{{ c.tipoIdentificacion }} {{ c.numeroIdentificacion }}@if (c.ciudad) { &bull; {{ c.ciudad }}}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold"
+                [class]="c.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'">
+            {{ c.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+          <a [routerLink]="['../../clientes', c.id, 'editar']"
+             class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            ✏ Editar
+          </a>
+          <a routerLink="/credifass/ventas/nueva" [queryParams]="{ clienteId: c.id }"
+             class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            + Nueva venta
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="border-b border-gray-200 bg-white flex items-end gap-0 px-4 overflow-x-auto" role="tablist">
+      @for (tab of [
+        { id: 'datos',     label: 'Datos' },
+        { id: 'productos', label: 'Compras (' + totalProductos + ' uds)' },
+        { id: 'abonos',    label: 'Abonos (' + abonos().length + ')' },
+        { id: 'ventas',    label: 'Ventas (' + totalVentas + ')' }
+      ]; track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tabActivo() === tab.id"
+          (click)="tabActivo.set($any(tab.id))"
+          class="flex items-center h-10 px-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap focus:outline-none"
+          [class.border-blue-600]="tabActivo() === tab.id"
+          [class.text-blue-600]="tabActivo() === tab.id"
+          [class.border-transparent]="tabActivo() !== tab.id"
+          [class.text-gray-500]="tabActivo() !== tab.id">
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <!-- TAB: Datos -->
+    @if (tabActivo() === 'datos') {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+
+        <!-- Información de contacto -->
+        <div class="rounded-xl bg-white ring-1 ring-gray-200 shadow-sm p-5">
+          <h2 class="text-base font-semibold text-gray-900 mb-4">Información de Contacto</h2>
+          <dl class="space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-gray-400 shrink-0 text-base">🪪</span>
+              <div>
+                <dt class="text-[10px] text-gray-400 uppercase tracking-wide">Documento</dt>
+                <dd class="text-sm font-medium font-mono text-gray-900">{{ c.numeroIdentificacion }}</dd>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-gray-400 shrink-0 text-base">📞</span>
+              <div>
+                <dt class="text-[10px] text-gray-400 uppercase tracking-wide">Teléfono</dt>
+                <dd class="text-sm font-medium text-gray-900">{{ c.telefono }}</dd>
+              </div>
+            </div>
+            @if (c.correo) {
+              <div class="flex items-center gap-3">
+                <span class="text-gray-400 shrink-0 text-base">✉</span>
+                <div>
+                  <dt class="text-[10px] text-gray-400 uppercase tracking-wide">Correo</dt>
+                  <dd class="text-sm font-medium text-gray-900">{{ c.correo }}</dd>
+                </div>
+              </div>
+            }
+            @if (c.direccion) {
+              <div class="flex items-start gap-3">
+                <span class="text-gray-400 shrink-0 text-base">📍</span>
+                <div>
+                  <dt class="text-[10px] text-gray-400 uppercase tracking-wide">Dirección</dt>
+                  <dd class="text-sm font-medium text-gray-900">{{ c.direccion }}@if (c.ciudad) {, {{ c.ciudad }}}</dd>
+                </div>
+              </div>
+            }
+            @if (c.observaciones) {
+              <div class="flex items-start gap-3">
+                <span class="text-gray-400 shrink-0 text-base">📝</span>
+                <div>
+                  <dt class="text-[10px] text-gray-400 uppercase tracking-wide">Notas</dt>
+                  <dd class="text-sm text-gray-700">{{ c.observaciones }}</dd>
+                </div>
+              </div>
+            }
+          </dl>
+        </div>
+
+        <!-- Resumen financiero -->
+        <div class="rounded-xl bg-white ring-1 ring-gray-200 shadow-sm p-5">
+          <h2 class="text-base font-semibold text-gray-900 mb-4">Resumen</h2>
+          <dl class="space-y-3">
+            <div class="flex justify-between items-center py-1">
+              <dt class="text-sm text-gray-500">Total ventas</dt>
+              <dd class="text-sm font-semibold text-gray-900">{{ totalVentas }}</dd>
+            </div>
+            <div class="flex justify-between items-center py-1">
+              <dt class="text-sm text-gray-500">Total comprado</dt>
+              <dd class="text-sm font-bold text-gray-900 tabular-nums">{{ totalVenta | cop }}</dd>
+            </div>
+            <div class="flex justify-between items-center py-1">
+              <dt class="text-sm text-gray-500">Total pagado</dt>
+              <dd class="text-sm font-semibold text-green-700 tabular-nums">{{ totalPagado | cop }}</dd>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+              <dt class="text-sm text-gray-500">Saldo pendiente</dt>
+              <dd class="text-sm font-bold tabular-nums"
+                  [class]="saldoTotal > 0 ? 'text-amber-700' : 'text-gray-900'">
+                {{ saldoTotal | cop }}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+      </div>
+    }
+
+    <!-- TAB: Compras (productos agregados) -->
+    @if (tabActivo() === 'productos') {
+      <div class="mt-4">
+        @if (productos().length === 0) {
+          <div class="rounded-xl border-2 border-dashed border-gray-200 py-16 text-center">
+            <p class="text-gray-400 text-sm">Este cliente no tiene compras registradas.</p>
+          </div>
+        } @else {
+
+          <!-- Desktop -->
+          <div class="hidden md:block overflow-x-auto rounded-xl ring-1 ring-gray-200 shadow-sm">
+            <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Producto</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Cant. total</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Total pagado</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Ventas</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (p of productos(); track p.productoId) {
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 font-medium text-gray-900">{{ p.productoNombre }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums text-gray-700">{{ p.totalCantidad }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums text-gray-900 font-semibold">{{ +p.totalGastado | cop }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums text-gray-500">{{ p.cantidadVentas }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot class="bg-gray-50 border-t border-gray-200">
+                <tr>
+                  <td class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Total</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-sm font-bold text-gray-900">{{ totalProductos }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-sm font-bold text-gray-900">{{ totalVenta | cop }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden space-y-3">
+            @for (p of productos(); track p.productoId) {
+              <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+                <p class="font-semibold text-gray-900 text-sm">{{ p.productoNombre }}</p>
+                <div class="mt-2 grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p class="text-gray-400">Cantidad</p>
+                    <p class="font-bold text-gray-800">{{ p.totalCantidad }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-400">Total</p>
+                    <p class="font-bold text-gray-800 tabular-nums">{{ +p.totalGastado | cop }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-400">Ventas</p>
+                    <p class="font-bold text-gray-500">{{ p.cantidadVentas }}</p>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+        }
+      </div>
+    }
+
+    <!-- TAB: Abonos -->
+    @if (tabActivo() === 'abonos') {
+      <div class="mt-4">
+        @if (abonos().length === 0) {
+          <div class="rounded-xl border-2 border-dashed border-gray-200 py-16 text-center">
+            <p class="text-gray-400 text-sm">No hay abonos registrados para este cliente.</p>
+          </div>
+        } @else {
+
+          <!-- Resumen -->
+          <div class="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="rounded-xl bg-white ring-1 ring-gray-200 shadow-sm p-3 text-center">
+              <p class="text-xl font-bold text-gray-900">{{ abonos().length }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">Abonos realizados</p>
+            </div>
+            <div class="rounded-xl bg-white ring-1 ring-gray-200 shadow-sm p-3 text-center">
+              <p class="text-lg font-bold text-green-700 tabular-nums">{{ totalAbonos | cop }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">Total abonado</p>
+            </div>
+            <div class="rounded-xl bg-white ring-1 ring-gray-200 shadow-sm p-3 text-center col-span-2 sm:col-span-1">
+              <p class="text-lg font-bold tabular-nums" [class]="saldoTotal > 0 ? 'text-amber-700' : 'text-gray-900'">
+                {{ saldoTotal | cop }}
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5">Saldo pendiente</p>
+            </div>
+          </div>
+
+          <!-- Desktop table -->
+          <div class="hidden md:block overflow-x-auto rounded-xl ring-1 ring-gray-200 shadow-sm">
+            <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Fecha</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Venta #</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Monto</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Medio pago</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Nota</th>
+                  <th scope="col" class="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (a of abonos(); track a.id) {
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 text-gray-700">{{ a.fechaAbono | date:'dd/MM/yyyy' }}</td>
+                    <td class="px-4 py-3 text-gray-500">{{ a.ventaNumero || '—' }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums font-semibold text-green-700">{{ +a.monto | cop }}</td>
+                    <td class="px-4 py-3 text-gray-600 capitalize">{{ a.medioPago }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs max-w-40 truncate">{{ a.nota || '—' }}</td>
+                    <td class="px-4 py-3 text-right">
+                      <a [routerLink]="['/credifass/ventas', a.ventaId]"
+                         class="text-xs font-medium text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                        Ver venta
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden space-y-3">
+            @for (a of abonos(); track a.id) {
+              <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="font-semibold text-green-700 tabular-nums text-sm">{{ +a.monto | cop }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Venta {{ a.ventaNumero || '—' }} · {{ a.fechaAbono | date:'dd/MM/yyyy' }}</p>
+                  </div>
+                  <span class="text-xs text-gray-400 capitalize shrink-0">{{ a.medioPago }}</span>
+                </div>
+                @if (a.nota) {
+                  <p class="mt-1 text-xs text-gray-500 truncate">{{ a.nota }}</p>
+                }
+                <div class="mt-2 text-right">
+                  <a [routerLink]="['/credifass/ventas', a.ventaId]"
+                     class="text-xs font-medium text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                    Ver venta →
+                  </a>
+                </div>
+              </div>
+            }
+          </div>
+
+        }
+      </div>
+    }
+
+    <!-- TAB: Ventas -->
+    @if (tabActivo() === 'ventas') {
+      <div class="mt-4">
+        @if (ventas().length === 0) {
+          <div class="rounded-xl border-2 border-dashed border-gray-200 py-16 text-center">
+            <p class="text-gray-400">Este cliente no tiene ventas registradas.</p>
+            <a routerLink="/credifass/ventas/nueva" [queryParams]="{ clienteId: c.id }"
+               class="mt-3 inline-block text-sm text-blue-600 hover:underline">
+              + Registrar primera venta
+            </a>
+          </div>
+        } @else {
+
+          <!-- Desktop table -->
+          <div class="hidden md:block overflow-x-auto rounded-xl ring-1 ring-gray-200 shadow-sm">
+            <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">#</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Fecha</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Tipo</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Total</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Pagado</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-gray-600">Saldo</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-600">Estado</th>
+                  <th scope="col" class="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (v of ventas(); track v.id) {
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 text-gray-500">{{ v.numeroVenta || '—' }}</td>
+                    <td class="px-4 py-3 text-gray-700">{{ v.fechaVenta | date:'dd/MM/yyyy' }}</td>
+                    <td class="px-4 py-3 text-gray-700 capitalize">{{ v.tipo }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums text-gray-900">{{ +v.subtotalVenta | cop }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums text-green-700">{{ +v.totalPagado | cop }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums"
+                        [class]="+v.saldoPendiente > 0 ? 'text-amber-700 font-semibold' : 'text-gray-500'">
+                      {{ +v.saldoPendiente | cop }}
+                    </td>
+                    <td class="px-4 py-3">
+                      <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize"
+                            [class]="estadoBadgeClass(v.estado)">
+                        {{ v.estado }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <a [routerLink]="['/credifass/ventas', v.id]"
+                         class="text-xs font-medium text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                        Ver
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot class="bg-gray-50 border-t border-gray-200">
+                <tr>
+                  <td colspan="3" class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Total</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-sm font-bold text-gray-900">{{ totalVenta | cop }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-sm font-bold text-green-700">{{ totalPagado | cop }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-sm font-bold"
+                      [class]="saldoTotal > 0 ? 'text-amber-700' : 'text-gray-900'">{{ saldoTotal | cop }}</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden space-y-3">
+            @for (v of ventas(); track v.id) {
+              <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="font-semibold text-gray-900 text-sm">Venta {{ v.numeroVenta || '—' }}</p>
+                    <p class="text-xs text-gray-500 capitalize">{{ v.tipo }} · {{ v.fechaVenta | date:'dd/MM/yyyy' }}</p>
+                  </div>
+                  <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 capitalize"
+                        [class]="estadoBadgeClass(v.estado)">
+                    {{ v.estado }}
+                  </span>
+                </div>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p class="text-gray-400">Total</p>
+                    <p class="font-semibold text-gray-800 tabular-nums">{{ +v.subtotalVenta | cop }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-400">Pagado</p>
+                    <p class="font-semibold text-green-700 tabular-nums">{{ +v.totalPagado | cop }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-400">Saldo</p>
+                    <p class="font-semibold tabular-nums"
+                       [class]="+v.saldoPendiente > 0 ? 'text-amber-700' : 'text-gray-500'">
+                      {{ +v.saldoPendiente | cop }}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-2 text-right">
+                  <a [routerLink]="['/credifass/ventas', v.id]"
+                     class="text-xs font-medium text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                    Ver detalle →
+                  </a>
+                </div>
+              </div>
+            }
+          </div>
+
+        }
+      </div>
+    }
+
+  }
+</div>

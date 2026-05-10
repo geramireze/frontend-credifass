@@ -71,6 +71,11 @@ export const ClientesStore = signalStore(
       await this.cargarLista();
     },
 
+    async reactivar(id: string): Promise<void> {
+      await api.reactivar(id);
+      await this.cargarDetalle(id);
+    },
+
     cambiarPagina(page: number): void {
       patchState(store, { page });
       this.cargarLista();

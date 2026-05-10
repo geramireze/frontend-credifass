@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { CopPipe } from '../../../../shared/pipes/cop-pipe';
 import { CfVentasStore } from '../data-access/cf-ventas.store';
-import type { ActualizarVentaDto, CfCuota, MedioPago, RegistrarAbonoDto } from '../data-access/cf-ventas.model';
+import type { ActualizarVentaDto, CfAbonoVenta, CfCuota, CfPagoCuota, MedioPago, RegistrarAbonoDto } from '../data-access/cf-ventas.model';
 
 @Component({
   selector: 'app-feature-cf-venta-detalle',
@@ -15,8 +16,9 @@ import type { ActualizarVentaDto, CfCuota, MedioPago, RegistrarAbonoDto } from '
 export class FeatureCfVentaDetalle implements OnInit {
   protected readonly Number = Number;
   protected readonly String = String;
-  protected readonly store = inject(CfVentasStore);
-  private readonly route = inject(ActivatedRoute);
+  protected readonly store  = inject(CfVentasStore);
+  private readonly route    = inject(ActivatedRoute);
+  protected readonly location = inject(Location);
 
   protected cuotaSeleccionada = signal<CfCuota | null>(null);
   protected montoPago = signal('');
@@ -127,6 +129,34 @@ export class FeatureCfVentaDetalle implements OnInit {
       this.errorEdit.set(msg);
     } finally {
       this.guardandoEdit.set(false);
+    }
+  }
+
+  // ── Anular pago de cuota ──────────────────────────────────────────────────
+  protected anulando = signal<string | null>(null);
+
+  async anularPago(pago: CfPagoCuota): Promise<void> {
+    const venta = this.store.seleccionado();
+    if (!venta || this.anulando()) return;
+    this.anulando.set(pago.id);
+    try {
+      await this.store.anularPago(venta.id, pago.id, 'Anulado por usuario');
+    } finally {
+      this.anulando.set(null);
+    }
+  }
+
+  // ── Anular abono ──────────────────────────────────────────────────────────
+  protected anulandoAbono = signal<string | null>(null);
+
+  async anularAbono(abono: CfAbonoVenta): Promise<void> {
+    const venta = this.store.seleccionado();
+    if (!venta || this.anulandoAbono()) return;
+    this.anulandoAbono.set(abono.id);
+    try {
+      await this.store.anularAbono(venta.id, abono.id, 'Anulado por usuario');
+    } finally {
+      this.anulandoAbono.set(null);
     }
   }
 

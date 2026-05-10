@@ -41,18 +41,43 @@
             <p class="text-sm text-app-muted-fg mt-0.5">CC {{ c.documento }} &bull; {{ c.ciudad }}</p>
           </div>
         </div>
-        <div class="flex gap-2 flex-wrap">
+        <div class="flex flex-col items-end gap-2">
+          @if (c.saldo_total > 0 || c.saldo_mercancia > 0) {
+            <div class="text-right space-y-1">
+              @if (c.saldo_total > 0) {
+                <div>
+                  <p class="text-[10px] text-app-muted-fg uppercase tracking-wide">Saldo préstamos</p>
+                  <p class="text-base font-bold text-status-mora leading-tight">{{ c.saldo_total | cop }}</p>
+                </div>
+              }
+              @if (c.saldo_mercancia > 0) {
+                <div>
+                  <p class="text-[10px] text-app-muted-fg uppercase tracking-wide">Saldo mercancía</p>
+                  <p class="text-base font-bold text-status-mora leading-tight">{{ c.saldo_mercancia | cop }}</p>
+                </div>
+              }
+            </div>
+          }
+          <div class="flex gap-2 flex-wrap justify-end">
           <span [class]="estadoBadge(c.estado_efectivo)">{{ estadoLabel(c.estado_efectivo) }}</span>
           @if (puedeEditar()) {
-            <a [routerLink]="['editar']" class="btn-secondary flex items-center gap-2">
-              <app-icon name="pencil" [size]="14" />
-              Editar
-            </a>
-            <button type="button" class="btn-primary flex items-center gap-2" (click)="nuevoPrestamo()">
-              <app-icon name="plus" [size]="14" />
-              Nuevo préstamo
-            </button>
+            @if (!c.activo) {
+              <button type="button" class="btn-primary flex items-center gap-2" (click)="onReactivar()">
+                <app-icon name="rotate-ccw" [size]="14" />
+                Reactivar cliente
+              </button>
+            } @else {
+              <a [routerLink]="['editar']" class="btn-secondary flex items-center gap-2">
+                <app-icon name="pencil" [size]="14" />
+                Editar
+              </a>
+              <button type="button" class="btn-primary flex items-center gap-2" (click)="nuevoPrestamo()">
+                <app-icon name="plus" [size]="14" />
+                Nuevo préstamo
+              </button>
+            }
           }
+          </div>
         </div>
       </div>
     </div>
@@ -62,6 +87,7 @@
       @for (tab of [
         { id: 'datos',       label: 'Datos' },
         { id: 'prestamos',   label: 'Préstamos' },
+        { id: 'compras',     label: 'Compras' },
         { id: 'referencias', label: 'Referencias' },
         { id: 'pagos',       label: 'Pagos' },
         { id: 'auditoria',   label: 'Auditoría' }
@@ -70,7 +96,7 @@
           type="button"
           role="tab"
           [attr.aria-selected]="tabActivo() === tab.id"
-          (click)="tabActivo.set($any(tab.id))"
+          (click)="setTab($any(tab.id))"
           class="flex items-center h-10 px-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
           [class.border-primary]="tabActivo() === tab.id"
           [class.text-primary]="tabActivo() === tab.id"
@@ -149,28 +175,348 @@
       </div>
     }
 
+    <!-- TAB: Compras -->
+    @if (tabActivo() === 'compras') {
+      @if (ventasLoading()) {
+        <div class="card mt-4 p-6 animate-pulse space-y-3">
+          @for (_ of [1,2,3]; track $index) { <div class="h-12 bg-app-muted rounded"></div> }
+        </div>
+      } @else if (ventas().length === 0) {
+        <div class="card mt-4 p-10 text-center">
+          <app-icon name="shopping-bag" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
+          <p class="text-sm text-app-muted-fg">Este cliente no tiene compras registradas.</p>
+        </div>
+      } @else {
+        <!-- Desktop table -->
+        <div class="card mt-4 overflow-hidden">
+          <table class="min-w-full divide-y divide-app-border text-sm hidden md:table">
+            <thead class="bg-app-muted/30">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg"># Venta</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Fecha</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Tipo</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Items</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Total venta</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Saldo pendiente</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-app-border bg-white">
+              @for (v of ventas(); track v.id) {
+                <tr class="hover:bg-app-muted/20 transition-colors">
+                  <td class="px-4 py-3 font-mono text-xs text-app-muted-fg">#{{ v.numero }}</td>
+                  <td class="px-4 py-3 text-app-fg tabular-nums">{{ v.fechaVenta | date:'dd/MM/yyyy' }}</td>
+                  <td class="px-4 py-3 text-center text-app-fg-2">{{ tipoVentaLabel(v.tipo) }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums text-app-fg-2">{{ v.totalItems }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums font-medium text-app-fg">{{ +v.subtotalVenta | cop }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums font-semibold"
+                      [class.text-status-mora]="+v.saldoPendiente > 0"
+                      [class.text-app-muted-fg]="+v.saldoPendiente === 0">
+                    {{ +v.saldoPendiente | cop }}
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span [class]="ventaBadge(v.estado)">{{ v.estado | titlecase }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="bg-app-muted/30 border-t border-app-border">
+              <tr>
+                <td colspan="4" class="px-4 py-2 text-xs font-semibold text-app-muted-fg uppercase">Total</td>
+                <td class="px-4 py-2 text-right tabular-nums font-bold text-app-fg">{{ totalVentasMonto() | cop }}</td>
+                <td class="px-4 py-2 text-right tabular-nums font-bold text-status-mora">{{ totalVentasSaldo() | cop }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden divide-y divide-app-border">
+            @for (v of ventas(); track v.id) {
+              <div class="p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <p class="text-xs text-app-muted-fg font-mono">#{{ v.numero }} · {{ v.fechaVenta | date:'dd/MM/yyyy' }}</p>
+                    <p class="font-semibold text-app-fg">{{ +v.subtotalVenta | cop }}</p>
+                  </div>
+                  <span [class]="ventaBadge(v.estado)">{{ v.estado | titlecase }}</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs mt-2">
+                  <div>
+                    <p class="text-app-muted-fg">Tipo</p>
+                    <p class="font-semibold text-app-fg">{{ tipoVentaLabel(v.tipo) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-app-muted-fg">Items</p>
+                    <p class="font-semibold text-app-fg">{{ v.totalItems }}</p>
+                  </div>
+                  <div>
+                    <p class="text-app-muted-fg">Saldo</p>
+                    <p class="font-semibold" [class.text-status-mora]="+v.saldoPendiente > 0">{{ +v.saldoPendiente | cop }}</p>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
     <!-- TAB: Préstamos -->
     @if (tabActivo() === 'prestamos') {
-      <div class="card mt-4 p-6 text-center">
-        <app-icon name="wallet" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
-        <p class="text-sm text-app-muted-fg mb-4">Ver todos los préstamos de este cliente</p>
-        <button type="button" class="btn-primary mx-auto" (click)="verPrestamos()">
-          <app-icon name="wallet" [size]="14" />
-          Ver préstamos
-        </button>
-      </div>
+      @if (prestamosLoading()) {
+        <div class="card mt-4 p-6 animate-pulse space-y-3">
+          @for (_ of [1,2,3]; track $index) { <div class="h-12 bg-app-muted rounded"></div> }
+        </div>
+      } @else if (prestamos().length === 0) {
+        <div class="card mt-4 p-10 text-center">
+          <app-icon name="wallet" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
+          <p class="text-sm text-app-muted-fg mb-4">Este cliente no tiene préstamos registrados.</p>
+          @if (puedeEditar()) {
+            <button type="button" class="btn-primary mx-auto" (click)="nuevoPrestamo()">
+              <app-icon name="plus" [size]="14" />
+              Nuevo préstamo
+            </button>
+          }
+        </div>
+      } @else {
+        <!-- Desktop table -->
+        <div class="card mt-4 overflow-hidden">
+          <table class="min-w-full divide-y divide-app-border text-sm hidden md:table">
+            <thead class="bg-app-muted/30">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Fecha inicio</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Monto prestado</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Cuotas</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Saldo pendiente</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Estado</th>
+                <th scope="col" class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-app-border bg-white">
+              @for (p of prestamos(); track p.id) {
+                <tr class="hover:bg-app-muted/20 transition-colors">
+                  <td class="px-4 py-3 text-app-fg tabular-nums">{{ p.fechaInicio | date:'dd/MM/yyyy' }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums font-medium text-app-fg">{{ +p.montoPrestado | cop }}</td>
+                  <td class="px-4 py-3 text-center text-app-fg-2">{{ p.cuotasPagadas }}/{{ p.cuotasTotales }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums font-semibold"
+                      [class.text-status-mora]="p.estado === 'en_mora'"
+                      [class.text-app-fg]="p.estado !== 'en_mora'">
+                    {{ +p.saldoPendiente | cop }}
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span [class]="prestamoBadge(p.estado)">{{ p.estado | titlecase }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <a [routerLink]="['/prestamos', p.id]" class="text-primary text-xs hover:underline">Ver</a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden divide-y divide-app-border">
+            @for (p of prestamos(); track p.id) {
+              <div class="p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <p class="text-xs text-app-muted-fg tabular-nums">{{ p.fechaInicio | date:'dd/MM/yyyy' }}</p>
+                    <p class="font-semibold text-app-fg">{{ +p.montoPrestado | cop }}</p>
+                  </div>
+                  <span [class]="prestamoBadge(p.estado)">{{ p.estado | titlecase }}</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs mt-2">
+                  <div>
+                    <p class="text-app-muted-fg">Cuotas</p>
+                    <p class="font-semibold text-app-fg">{{ p.cuotasPagadas }}/{{ p.cuotasTotales }}</p>
+                  </div>
+                  <div>
+                    <p class="text-app-muted-fg">Saldo</p>
+                    <p class="font-semibold" [class.text-status-mora]="p.estado === 'en_mora'">{{ +p.saldoPendiente | cop }}</p>
+                  </div>
+                  <div class="text-right">
+                    <a [routerLink]="['/prestamos', p.id]" class="text-primary text-xs hover:underline">Ver detalle →</a>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Pagos del préstamo -->
+        @if (pagosDePrestamo().length > 0) {
+          <div class="card mt-4 overflow-hidden">
+            <div class="px-4 py-3 border-b border-app-border bg-app-muted/30">
+              <h3 class="text-sm font-semibold text-app-fg">Pagos realizados</h3>
+            </div>
+            <table class="min-w-full divide-y divide-app-border text-sm hidden md:table">
+              <thead class="bg-app-muted/20">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Fecha</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Referencia</th>
+                  <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Medio</th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Monto</th>
+                  <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-app-border bg-white">
+                @for (pg of pagosDePrestamo(); track pg.id) {
+                  <tr class="hover:bg-app-muted/20 transition-colors" [class.opacity-50]="pg.anulado">
+                    <td class="px-4 py-3 text-app-fg tabular-nums">{{ pg.fecha | date:'dd/MM/yyyy' }}</td>
+                    <td class="px-4 py-3 text-app-fg-2 text-xs">{{ pg.referencia }}</td>
+                    <td class="px-4 py-3 text-center text-app-fg-2 text-xs capitalize">{{ pg.medioPago }}</td>
+                    <td class="px-4 py-3 text-right tabular-nums font-semibold"
+                        [class.text-app-fg]="!pg.anulado"
+                        [class.line-through]="pg.anulado">
+                      {{ +pg.monto | cop }}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      @if (pg.anulado) {
+                        <span class="badge">Anulado</span>
+                      } @else {
+                        <span class="badge badge-success">Aplicado</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot class="bg-app-muted/30 border-t border-app-border">
+                <tr>
+                  <td colspan="3" class="px-4 py-2 text-xs font-semibold text-app-muted-fg uppercase">Total pagado</td>
+                  <td class="px-4 py-2 text-right tabular-nums font-bold text-app-fg">{{ totalPagadoPrestamos() | cop }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="md:hidden divide-y divide-app-border">
+              @for (pg of pagosDePrestamo(); track pg.id) {
+                <div class="p-4" [class.opacity-50]="pg.anulado">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="text-xs text-app-muted-fg tabular-nums">{{ pg.fecha | date:'dd/MM/yyyy' }}</p>
+                      <p class="text-sm text-app-fg-2 mt-0.5">{{ pg.referencia }}</p>
+                    </div>
+                    <p class="font-bold text-app-fg tabular-nums" [class.line-through]="pg.anulado">{{ +pg.monto | cop }}</p>
+                  </div>
+                  <div class="flex items-center gap-2 mt-2">
+                    <span class="text-xs text-app-muted-fg capitalize">{{ pg.medioPago }}</span>
+                    @if (pg.anulado) {
+                      <span class="badge text-xs">Anulado</span>
+                    } @else {
+                      <span class="badge badge-success text-xs">Aplicado</span>
+                    }
+                  </div>
+                </div>
+              }
+              <div class="p-3 bg-app-muted/30 flex justify-between text-xs">
+                <span class="text-app-muted-fg font-semibold uppercase">Total pagado</span>
+                <span class="font-bold text-app-fg">{{ totalPagadoPrestamos() | cop }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      }
     }
 
     <!-- TAB: Pagos -->
     @if (tabActivo() === 'pagos') {
-      <div class="card mt-4 p-8 text-center">
-        <app-icon name="banknote" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
-        <p class="text-sm text-app-muted-fg mb-4">Ver el historial completo de cobros de este cliente</p>
-        <button type="button" class="btn-primary mx-auto" (click)="verPrestamos()">
-          <app-icon name="banknote" [size]="14" />
-          Ver préstamos y pagos
-        </button>
-      </div>
+      @if (pagosLoading()) {
+        <div class="card mt-4 p-6 animate-pulse space-y-3">
+          @for (_ of [1,2,3,4]; track $index) { <div class="h-11 bg-app-muted rounded"></div> }
+        </div>
+      } @else if (pagos().length === 0) {
+        <div class="card mt-4 p-10 text-center">
+          <app-icon name="banknote" [size]="40" class="text-app-muted-fg/40 mx-auto mb-3" />
+          <p class="text-sm text-app-muted-fg">Este cliente no tiene pagos registrados.</p>
+        </div>
+      } @else {
+        <div class="card mt-4 overflow-hidden">
+          <!-- Desktop table -->
+          <table class="min-w-full divide-y divide-app-border text-sm hidden md:table">
+            <thead class="bg-app-muted/30">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Fecha</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-app-fg">Referencia</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Tipo</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Medio</th>
+                <th scope="col" class="px-4 py-3 text-right font-semibold text-app-fg">Monto</th>
+                <th scope="col" class="px-4 py-3 text-center font-semibold text-app-fg">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-app-border bg-white">
+              @for (p of pagos(); track p.id) {
+                <tr class="hover:bg-app-muted/20 transition-colors" [class.opacity-50]="p.anulado">
+                  <td class="px-4 py-3 text-app-fg tabular-nums">{{ p.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td class="px-4 py-3 text-app-fg-2 text-xs">{{ p.referencia }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
+                          [class.bg-primary/10]="p.tipo === 'prestamo'"
+                          [class.text-primary]="p.tipo === 'prestamo'"
+                          [class.bg-amber-100]="p.tipo === 'mercancia'"
+                          [class.text-amber-700]="p.tipo === 'mercancia'">
+                      {{ p.tipo === 'prestamo' ? 'Préstamo' : 'Mercancía' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center text-app-fg-2 text-xs capitalize">{{ p.medioPago }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums font-semibold"
+                      [class.text-app-fg]="!p.anulado"
+                      [class.line-through]="p.anulado">
+                    {{ +p.monto | cop }}
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    @if (p.anulado) {
+                      <span class="badge">Anulado</span>
+                    } @else {
+                      <span class="badge badge-success">Aplicado</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="bg-app-muted/30 border-t border-app-border">
+              <tr>
+                <td colspan="4" class="px-4 py-2 text-xs font-semibold text-app-muted-fg uppercase">Total cobrado</td>
+                <td class="px-4 py-2 text-right font-bold text-app-fg">
+                  <div class="text-xs font-normal text-app-muted-fg">Préstamos: {{ totalPagadoPrestamos() | cop }}</div>
+                  <div class="text-xs font-normal text-app-muted-fg">Mercancía: {{ totalPagadoMercancia() | cop }}</div>
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden divide-y divide-app-border">
+            @for (p of pagos(); track p.id) {
+              <div class="p-4" [class.opacity-50]="p.anulado">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="text-xs text-app-muted-fg tabular-nums">{{ p.fecha | date:'dd/MM/yyyy' }}</p>
+                    <p class="text-sm text-app-fg-2 mt-0.5">{{ p.referencia }}</p>
+                  </div>
+                  <p class="font-bold text-app-fg tabular-nums" [class.line-through]="p.anulado">{{ +p.monto | cop }}</p>
+                </div>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full"
+                        [class.bg-primary/10]="p.tipo === 'prestamo'"
+                        [class.text-primary]="p.tipo === 'prestamo'"
+                        [class.bg-amber-100]="p.tipo === 'mercancia'"
+                        [class.text-amber-700]="p.tipo === 'mercancia'">
+                    {{ p.tipo === 'prestamo' ? 'Préstamo' : 'Mercancía' }}
+                  </span>
+                  <span class="text-xs text-app-muted-fg capitalize">· {{ p.medioPago }}</span>
+                  @if (p.anulado) { <span class="badge text-xs">Anulado</span> }
+                </div>
+              </div>
+            }
+            <div class="p-4 bg-app-muted/30 space-y-1 text-xs text-app-muted-fg">
+              <div class="flex justify-between"><span>Total préstamos</span><span class="font-bold text-app-fg">{{ totalPagadoPrestamos() | cop }}</span></div>
+              <div class="flex justify-between"><span>Total mercancía</span><span class="font-bold text-app-fg">{{ totalPagadoMercancia() | cop }}</span></div>
+            </div>
+          </div>
+        </div>
+      }
     }
 
     <!-- TAB: Auditoría -->

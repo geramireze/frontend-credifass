@@ -47,6 +47,13 @@ export const CREDIFASS_ROUTES: Routes = [
       ),
   },
   {
+    path: 'clientes/:id',
+    loadComponent: () =>
+      import('./cf-clientes/feature-cf-cliente-detalle/feature-cf-cliente-detalle').then(
+        (m) => m.FeatureCfClienteDetalle,
+      ),
+  },
+  {
     path: 'clientes/:id/editar',
     loadComponent: () =>
       import('./cf-clientes/feature-cf-cliente-form/feature-cf-cliente-form').then(
