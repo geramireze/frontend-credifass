@@ -119,25 +119,29 @@
       <p class="text-xs text-app-muted-fg">préstamos activos</p>
     </div>
 
-    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+    <a routerLink="/clientes" [queryParams]="{ estado: 'al_dia' }"
+       class="card p-3.5 lg:p-5 flex flex-col gap-3 hover:border-green-300 hover:shadow-sm transition-all cursor-pointer group"
+       aria-label="Ver clientes al día">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-app-muted-fg font-medium">Clientes al día</span>
+        <span class="text-sm text-app-muted-fg font-medium group-hover:text-green-700 transition-colors">Clientes al día</span>
         <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
           <app-icon name="check-circle" [size]="18" class="text-green-600" />
         </div>
       </div>
       <p class="text-[22px] font-bold text-app-fg leading-none">{{ kpis.clientes_al_dia }}</p>
-    </div>
+    </a>
 
-    <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
+    <a routerLink="/clientes" [queryParams]="{ estado: 'en_mora' }"
+       class="card p-3.5 lg:p-5 flex flex-col gap-3 hover:border-red-300 hover:shadow-sm transition-all cursor-pointer group"
+       aria-label="Ver clientes en mora">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-app-muted-fg font-medium">Clientes en mora</span>
+        <span class="text-sm text-app-muted-fg font-medium group-hover:text-red-700 transition-colors">Clientes en mora</span>
         <div class="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
           <app-icon name="alert-triangle" [size]="18" class="text-red-600" />
         </div>
       </div>
       <p class="text-[22px] font-bold text-red-600 leading-none">{{ kpis.clientes_en_mora }}</p>
-    </div>
+    </a>
 
     <div class="card p-3.5 lg:p-5 flex flex-col gap-3">
       <div class="flex items-center justify-between">

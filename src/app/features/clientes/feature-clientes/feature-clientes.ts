@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { ClientesStore } from '../data-access/clientes.store';
 import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
@@ -22,6 +22,14 @@ const ESTADO_BADGE: Record<EstadoCliente, string> = {
   sin_prestamos: 'badge',
 };
 
+const TITULO_FILTRO: Record<string, string> = {
+  al_dia:               'Clientes al día',
+  pendiente_por_vencer: 'Clientes por vencer',
+  en_mora:              'Clientes en mora',
+  inactivo:             'Clientes inactivos',
+  sin_prestamos:        'Clientes sin préstamos',
+};
+
 @Component({
   selector: 'app-feature-clientes',
   imports: [RouterLink, CopPipe, AppIconComponent],
@@ -30,16 +38,25 @@ const ESTADO_BADGE: Record<EstadoCliente, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeatureClientes implements OnInit, OnDestroy {
-  protected readonly store = inject(ClientesStore);
+  protected readonly store     = inject(ClientesStore);
   protected readonly authStore = inject(AuthStore);
+  private  readonly route      = inject(ActivatedRoute);
 
-  protected readonly busqueda = signal('');
+  protected readonly busqueda     = signal('');
   protected readonly filtroEstado = signal('');
+
+  protected readonly tituloHeader = computed(() =>
+    TITULO_FILTRO[this.filtroEstado()] ?? 'Clientes'
+  );
+
+  protected readonly subHeader = 'Gestión de clientes del sistema';
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
-    this.store.cargarLista();
+    const estadoParam = this.route.snapshot.queryParamMap.get('estado') ?? '';
+    this.filtroEstado.set(estadoParam);
+    this.store.buscar('', estadoParam);
   }
 
   ngOnDestroy(): void {

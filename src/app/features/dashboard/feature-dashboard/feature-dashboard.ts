@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { DashboardStore } from '../data-access/dashboard.store';
 import { AuthStore } from '../../auth/data-access/auth.store';
@@ -9,7 +10,7 @@ import { RangoDashboard } from '../data-access/dashboard.model';
 
 @Component({
   selector: 'app-feature-dashboard',
-  imports: [NgxEchartsDirective, CopPipe, AppIconComponent],
+  imports: [NgxEchartsDirective, CopPipe, AppIconComponent, RouterLink],
   templateUrl: './feature-dashboard.html',
   styleUrl: './feature-dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

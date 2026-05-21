@@ -3,8 +3,8 @@
   <!-- Header -->
   <div class="page-header">
     <div>
-      <h1 class="page-title">Clientes</h1>
-      <p class="page-sub">Gestión de clientes del sistema</p>
+      <h1 class="page-title">{{ tituloHeader() }}</h1>
+      <p class="page-sub">{{ subHeader }}</p>
     </div>
     @if (puedeCriar()) {
       <a routerLink="nuevo" class="btn-primary flex items-center gap-2" aria-label="Crear nuevo cliente">
@@ -13,6 +13,24 @@
       </a>
     }
   </div>
+
+  <!-- Chip filtro activo -->
+  @if (filtroEstado()) {
+    <div class="flex items-center gap-2 mb-4">
+      <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+        <app-icon name="filter" [size]="11" />
+        {{ tituloHeader() }}
+        <button
+          type="button"
+          class="ml-0.5 hover:text-primary/70 focus:outline-none"
+          (click)="onEstadoChange('')"
+          aria-label="Quitar filtro"
+        >
+          <app-icon name="x" [size]="11" />
+        </button>
+      </span>
+    </div>
+  }
 
   <!-- Filters -->
   <div class="flex flex-col sm:flex-row gap-3 mb-6">
