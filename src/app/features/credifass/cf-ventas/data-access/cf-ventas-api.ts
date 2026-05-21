@@ -4,6 +4,7 @@ import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import type {
   ActualizarVentaDto,
+  ActualizarAbonoDto,
   CfVenta,
   CfVentasFiltros,
   CrearVentaDto,
@@ -105,6 +106,10 @@ export class CfVentasApi {
 
   anularAbono(abonoId: string, motivo: string): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.base}/abonos/${abonoId}/anular`, { motivo }));
+  }
+
+  actualizarAbono(abonoId: string, dto: ActualizarAbonoDto): Promise<CfAbonoVenta> {
+    return firstValueFrom(this.http.patch<CfAbonoVenta>(`${this.base}/abonos/${abonoId}`, dto));
   }
 
   anular(id: string): Promise<void> {

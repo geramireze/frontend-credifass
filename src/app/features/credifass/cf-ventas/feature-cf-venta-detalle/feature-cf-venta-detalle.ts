@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { CopPipe } from '../../../../shared/pipes/cop-pipe';
 import { CfVentasStore } from '../data-access/cf-ventas.store';
-import type { ActualizarVentaDto, CfAbonoVenta, CfCuota, CfPagoCuota, MedioPago, RegistrarAbonoDto } from '../data-access/cf-ventas.model';
+import type { ActualizarAbonoDto, ActualizarVentaDto, CfAbonoVenta, CfCuota, CfPagoCuota, MedioPago, RegistrarAbonoDto } from '../data-access/cf-ventas.model';
 
 @Component({
   selector: 'app-feature-cf-venta-detalle',
@@ -157,6 +157,55 @@ export class FeatureCfVentaDetalle implements OnInit {
       await this.store.anularAbono(venta.id, abono.id, 'Anulado por usuario');
     } finally {
       this.anulandoAbono.set(null);
+    }
+  }
+
+  // ── Editar abono ──────────────────────────────────────────────────────────
+  protected editandoAbonoId   = signal<string | null>(null);
+  protected editAbonoMonto    = signal('');
+  protected editAbonoFecha    = signal('');
+  protected editAbonoMedio    = signal<MedioPago>('efectivo');
+  protected editAbonoNota     = signal('');
+  protected guardandoEditAbono = signal(false);
+  protected errorEditAbono    = signal<string | null>(null);
+
+  abrirEditAbono(abono: CfAbonoVenta): void {
+    this.editAbonoMonto.set(abono.monto);
+    this.editAbonoFecha.set(abono.fechaAbono);
+    this.editAbonoMedio.set(abono.medioPago);
+    this.editAbonoNota.set(abono.nota ?? '');
+    this.errorEditAbono.set(null);
+    this.editandoAbonoId.set(abono.id);
+  }
+
+  cancelarEditAbono(): void {
+    this.editandoAbonoId.set(null);
+    this.errorEditAbono.set(null);
+  }
+
+  async guardarEditAbono(): Promise<void> {
+    const venta = this.store.seleccionado();
+    const abonoId = this.editandoAbonoId();
+    if (!venta || !abonoId) return;
+
+    this.guardandoEditAbono.set(true);
+    this.errorEditAbono.set(null);
+
+    try {
+      const dto: ActualizarAbonoDto = {
+        monto:      this.editAbonoMonto(),
+        fechaAbono: this.editAbonoFecha(),
+        medioPago:  this.editAbonoMedio(),
+        nota:       this.editAbonoNota() || null,
+      };
+      await this.store.actualizarAbono(venta.id, abonoId, dto);
+      this.editandoAbonoId.set(null);
+    } catch (err: unknown) {
+      const msg = (err as { error?: { message?: string } })?.error?.message
+        ?? (err instanceof Error ? err.message : 'Error al actualizar el abono.');
+      this.errorEditAbono.set(msg);
+    } finally {
+      this.guardandoEditAbono.set(false);
     }
   }
 

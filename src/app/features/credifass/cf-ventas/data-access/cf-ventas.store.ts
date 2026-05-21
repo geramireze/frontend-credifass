@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
 import { CfVentasApi } from './cf-ventas-api';
-import type { CfVentasState, CfVentasFiltros, ActualizarVentaDto, CrearVentaDto, RegistrarPagoDto, RegistrarAbonoDto, IntervaloVenta } from './cf-ventas.model';
+import type { CfVentasState, CfVentasFiltros, ActualizarVentaDto, ActualizarAbonoDto, CrearVentaDto, RegistrarPagoDto, RegistrarAbonoDto, IntervaloVenta } from './cf-ventas.model';
 
 const inicial: CfVentasState = {
   items: [],
@@ -88,6 +88,11 @@ export const CfVentasStore = signalStore(
 
     async anularAbono(ventaId: string, abonoId: string, motivo: string): Promise<void> {
       await api.anularAbono(abonoId, motivo);
+      await this.cargarDetalle(ventaId);
+    },
+
+    async actualizarAbono(ventaId: string, abonoId: string, dto: ActualizarAbonoDto): Promise<void> {
+      await api.actualizarAbono(abonoId, dto);
       await this.cargarDetalle(ventaId);
     },
 

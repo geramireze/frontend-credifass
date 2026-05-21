@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe, SlicePipe } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PrestamosStore } from '../data-access/prestamos.store';
 import { PrestamosApiService } from '../data-access/prestamos-api';
+import { PagosApiService } from '../../pagos/data-access/pagos-api';
 import { AuthStore } from '../../auth/data-access/auth.store';
 import { CopPipe } from '../../../shared/pipes/cop-pipe';
 import { AppIconComponent } from '../../../shared/components/icon/icon';
@@ -41,21 +42,81 @@ const CUOTA_LABELS: Record<CuotaPrestamo['estado'], string> = {
 
 @Component({
   selector: 'app-feature-prestamo-detalle',
-  imports: [RouterLink, CopPipe, AppIconComponent, SlicePipe, DatePipe, ReactiveFormsModule],
+  imports: [RouterLink, CopPipe, AppIconComponent, SlicePipe, DatePipe, ReactiveFormsModule, FormsModule],
   templateUrl: './feature-prestamo-detalle.html',
   styleUrl: './feature-prestamo-detalle.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeaturePrestamoDetalle implements OnInit {
+  protected readonly String = String;
   protected readonly store = inject(PrestamosStore);
   private readonly authStore = inject(AuthStore);
   private readonly api = inject(PrestamosApiService);
+  private readonly pagosApi = inject(PagosApiService);
   private readonly usuariosApi = inject(UsuariosApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   protected readonly cobradores = signal<UsuarioListItem[]>([]);
   private readonly fb = inject(FormBuilder);
+
+  // ── Pagar cuota ──────────────────────────────────────────────────────────
+  protected readonly cuotaSeleccionada = signal<CuotaPrestamo | null>(null);
+  protected readonly pagoMonto  = signal('');
+  protected readonly pagoMedio  = signal<'efectivo' | 'transferencia' | 'otro'>('efectivo');
+  protected readonly guardandoPago = signal(false);
+  protected readonly errorPago  = signal<string | null>(null);
+  protected readonly exitoPago  = signal(false);
+
+  protected readonly mediosPago = [
+    { value: 'efectivo'      as const, label: 'Efectivo' },
+    { value: 'transferencia' as const, label: 'Transferencia' },
+    { value: 'otro'          as const, label: 'Otro' },
+  ];
+
+  protected seleccionarCuotaPago(cuota: CuotaPrestamo): void {
+    const saldo = cuota.valor - cuota.pagado + cuota.mora_acumulada;
+    this.pagoMonto.set(String(Math.round(saldo)));
+    this.pagoMedio.set('efectivo');
+    this.errorPago.set(null);
+    this.exitoPago.set(false);
+    this.cuotaSeleccionada.set(cuota);
+  }
+
+  protected cancelarPago(): void {
+    if (!this.guardandoPago()) this.cuotaSeleccionada.set(null);
+  }
+
+  protected async confirmarPago(): Promise<void> {
+    const p = this.store.seleccionado();
+    if (!p || this.guardandoPago()) return;
+    const monto = Number(this.pagoMonto());
+    if (!monto || monto <= 0) { this.errorPago.set('Ingresa un monto válido.'); return; }
+
+    this.guardandoPago.set(true);
+    this.errorPago.set(null);
+
+    try {
+      await this.pagosApi.registrar({
+        prestamo_id:     p.id,
+        monto,
+        medio:           this.pagoMedio(),
+        idempotency_key: crypto.randomUUID(),
+      });
+      this.exitoPago.set(true);
+      this.cuotaSeleccionada.set(null);
+      await this.store.cargarDetalle(p.id);
+      if (this.tabActivo() === 'pagos') {
+        this.pagos.set(await this.api.pagos(p.id).catch(() => []));
+      } else {
+        this.pagos.set([]);
+      }
+    } catch {
+      this.errorPago.set('No se pudo registrar el pago. Inténtalo de nuevo.');
+    } finally {
+      this.guardandoPago.set(false);
+    }
+  }
 
   protected readonly tabActivo = signal<'resumen' | 'cronograma' | 'pagos' | 'auditoria'>('cronograma');
   protected readonly pagos = signal<PagoPrestamo[]>([]);

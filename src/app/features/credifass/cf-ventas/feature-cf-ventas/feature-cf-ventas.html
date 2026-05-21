@@ -1,4 +1,12 @@
 <div class="p-4 md:p-6 space-y-4">
+
+  <!-- Éxito global -->
+  @if (abonoExito()) {
+    <div class="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2" role="alert" aria-live="polite">
+      Abono registrado correctamente.
+    </div>
+  }
+
   <div class="flex items-center justify-between flex-wrap gap-3">
     <h1 class="text-2xl font-bold text-gray-900">Ventas</h1>
     <a routerLink="../ventas/nueva"
@@ -73,10 +81,19 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-right">
-                <a [routerLink]="['../ventas', v.id]"
-                   class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
-                  Ver
-                </a>
+                <div class="flex items-center justify-end gap-3">
+                  @if (v.estado === 'activa' && (+v.saldoPendiente) > 0) {
+                    <button type="button"
+                            (click)="abrirAbono(v); $event.stopPropagation()"
+                            class="text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400 whitespace-nowrap">
+                      Abonar
+                    </button>
+                  }
+                  <a [routerLink]="['../ventas', v.id]"
+                     class="text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+                    Ver
+                  </a>
+                </div>
               </td>
             </tr>
           }
@@ -87,23 +104,32 @@
     <!-- Mobile cards -->
     <div class="md:hidden space-y-3">
       @for (v of store.items(); track v.id) {
-        <a [routerLink]="['../ventas', v.id]" class="block rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200 hover:ring-blue-300 transition-all">
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <p class="font-semibold text-gray-900">{{ v.clienteNombre }}</p>
-              <p class="text-xs font-mono text-gray-400">{{ v.numeroVenta }}</p>
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+          <a [routerLink]="['../ventas', v.id]" class="block">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="font-semibold text-gray-900">{{ v.clienteNombre }}</p>
+                <p class="text-xs font-mono text-gray-400">{{ v.numeroVenta }}</p>
+              </div>
+              <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold shrink-0"
+                    [class]="estadoBadgeClass(v.estado)">{{ v.estado }}</span>
             </div>
-            <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold shrink-0"
-                  [class]="estadoBadgeClass(v.estado)">{{ v.estado }}</span>
-          </div>
-          <div class="mt-2 flex gap-4 text-sm">
-            <span class="text-gray-500">{{ v.fechaVenta | date:'dd/MM/yy' }}</span>
-            <span class="text-gray-700">{{ v.subtotalVenta | cop }}</span>
-            @if ((+v.saldoPendiente) > 0) {
-              <span class="text-orange-700 font-semibold">Saldo: {{ v.saldoPendiente | cop }}</span>
-            }
-          </div>
-        </a>
+            <div class="mt-2 flex gap-4 text-sm">
+              <span class="text-gray-500">{{ v.fechaVenta | date:'dd/MM/yy' }}</span>
+              <span class="text-gray-700">{{ v.subtotalVenta | cop }}</span>
+              @if ((+v.saldoPendiente) > 0) {
+                <span class="text-orange-700 font-semibold">Saldo: {{ v.saldoPendiente | cop }}</span>
+              }
+            </div>
+          </a>
+          @if (v.estado === 'activa' && (+v.saldoPendiente) > 0) {
+            <button type="button"
+                    (click)="abrirAbono(v)"
+                    class="mt-3 w-full rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold py-2 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400">
+              Abonar — Saldo {{ v.saldoPendiente | cop }}
+            </button>
+          }
+        </div>
       }
     </div>
 
@@ -130,3 +156,95 @@
     </div>
   }
 </div>
+
+<!-- Modal de abono rápido -->
+@if (abonoVenta(); as v) {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+       role="dialog" aria-modal="true" aria-label="Registrar abono">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/40" (click)="cerrarAbono()" aria-hidden="true"></div>
+
+    <!-- Panel -->
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-5"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">Registrar abono</h2>
+          <p class="text-sm text-gray-500 mt-0.5">{{ v.clienteNombre }} · Venta #{{ v.numeroVenta }}</p>
+        </div>
+        <button type="button" (click)="cerrarAbono()" [disabled]="abonoLoading()"
+                class="text-gray-400 hover:text-gray-600 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-300 rounded"
+                aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <!-- Resumen financiero -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-xl bg-gray-50 p-3 text-center">
+          <p class="text-xs text-gray-500">Total venta</p>
+          <p class="font-bold text-gray-800 tabular-nums">{{ v.subtotalVenta | cop }}</p>
+        </div>
+        <div class="rounded-xl bg-orange-50 p-3 text-center">
+          <p class="text-xs text-gray-500">Saldo pendiente</p>
+          <p class="font-bold text-orange-700 tabular-nums">{{ v.saldoPendiente | cop }}</p>
+        </div>
+      </div>
+
+      @if (abonoError()) {
+        <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700" role="alert">
+          {{ abonoError() }}
+        </div>
+      }
+
+      <!-- Formulario -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label for="abono-monto-list" class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+          <input id="abono-monto-list" type="number" min="1"
+                 [ngModel]="abonoMonto()" (ngModelChange)="abonoMonto.set(String($event ?? ''))"
+                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                 placeholder="0" />
+        </div>
+        <div>
+          <label for="abono-fecha-list" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+          <input id="abono-fecha-list" type="date"
+                 [ngModel]="abonoFecha()" (ngModelChange)="abonoFecha.set($event)"
+                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+        <div>
+          <label for="abono-medio-list" class="block text-sm font-medium text-gray-700 mb-1">Medio de pago</label>
+          <select id="abono-medio-list"
+                  [ngModel]="abonoMedio()" (ngModelChange)="abonoMedio.set($event)"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            @for (m of mediosPago; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="abono-nota-list" class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
+          <input id="abono-nota-list" type="text"
+                 [ngModel]="abonoNota()" (ngModelChange)="abonoNota.set($event)"
+                 placeholder="Opcional"
+                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex gap-3 pt-1">
+        <button type="button" (click)="confirmarAbono()"
+                [disabled]="abonoLoading() || !abonoMonto()"
+                class="flex-1 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          {{ abonoLoading() ? 'Registrando…' : 'Confirmar abono' }}
+        </button>
+        <button type="button" (click)="cerrarAbono()" [disabled]="abonoLoading()"
+                class="rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-400">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+}

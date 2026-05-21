@@ -140,3 +140,10 @@ export interface RegistrarAbonoDto {
   nota?: string;
   fechaAbono?: string;
 }
+
+export interface ActualizarAbonoDto {
+  monto?: string;
+  fechaAbono?: string;
+  medioPago?: MedioPago;
+  nota?: string | null;
+}
