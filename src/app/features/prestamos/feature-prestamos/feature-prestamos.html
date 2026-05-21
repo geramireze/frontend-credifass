@@ -14,6 +14,14 @@
     }
   </div>
 
+  <!-- Éxito global -->
+  @if (pagoExito()) {
+    <div class="card px-4 py-3 mb-4 bg-status-success-light border border-status-success text-status-success-fg text-sm flex items-center gap-2" role="alert" aria-live="polite">
+      <app-icon name="check-circle" [size]="14" class="shrink-0" />
+      Pago registrado correctamente.
+    </div>
+  }
+
   <!-- Loading bar -->
   @if (store.loading()) {
     <div class="h-1 w-full bg-app-border rounded overflow-hidden mb-2" aria-label="Cargando préstamos">
@@ -86,6 +94,7 @@
               <th class="px-3 text-center text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cuotas</th>
               <th class="px-3 text-right text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Saldo</th>
               <th class="px-3 text-left text-xs font-semibold text-app-muted-fg uppercase tracking-wide">Cobrador</th>
+              <th class="px-3 w-20"></th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +130,15 @@
                   </div>
                 </td>
                 <td class="px-3 text-sm text-app-muted-fg truncate" data-label="Cobrador">{{ p.cobrador_nombre ?? '—' }}</td>
+                <td class="px-3 text-center" data-label="">
+                  @if (p.estado !== 'pagado' && p.estado !== 'cancelado' && p.saldo_pendiente > 0) {
+                    <button type="button"
+                            (click)="abrirPago(p); $event.stopPropagation()"
+                            class="btn-primary text-xs h-7 px-3 whitespace-nowrap">
+                      Pagar
+                    </button>
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -160,3 +178,88 @@
   }
 
 </div>
+
+<!-- Modal de pago rápido -->
+@if (pagoModal(); as p) {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+       role="dialog" aria-modal="true" aria-label="Registrar pago">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/40" (click)="cerrarPago()" aria-hidden="true"></div>
+
+    <!-- Panel -->
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-5"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">Registrar pago</h2>
+          <p class="text-sm text-gray-500 mt-0.5">{{ p.cliente_nombre }}</p>
+        </div>
+        <button type="button" (click)="cerrarPago()" [disabled]="pagoLoading()"
+                class="text-gray-400 hover:text-gray-600 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-300 rounded"
+                aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+
+      <!-- Resumen financiero -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-xl bg-gray-50 p-3 text-center">
+          <p class="text-xs text-gray-500">Cuota</p>
+          <p class="font-bold text-gray-800 tabular-nums">{{ p.cuota_semanal | cop }}</p>
+        </div>
+        <div class="rounded-xl bg-orange-50 p-3 text-center">
+          <p class="text-xs text-gray-500">Saldo pendiente</p>
+          <p class="font-bold text-orange-700 tabular-nums">{{ p.saldo_pendiente | cop }}</p>
+        </div>
+      </div>
+
+      @if (p.mora_acumulada > 0) {
+        <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+          Mora acumulada: <strong>{{ p.mora_acumulada | cop }}</strong>
+        </div>
+      }
+
+      @if (pagoError()) {
+        <div class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700" role="alert">
+          {{ pagoError() }}
+        </div>
+      }
+
+      <!-- Formulario -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label for="pago-monto-list" class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+          <input id="pago-monto-list" type="number" min="1"
+                 [ngModel]="pagoMonto()" (ngModelChange)="pagoMonto.set(String($event ?? ''))"
+                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="0" />
+        </div>
+        <div>
+          <label for="pago-medio-list" class="block text-sm font-medium text-gray-700 mb-1">Medio de pago</label>
+          <select id="pago-medio-list"
+                  [ngModel]="pagoMedio()" (ngModelChange)="pagoMedio.set($event)"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            @for (m of mediosPago; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex gap-3 pt-1">
+        <button type="button" (click)="confirmarPago()"
+                [disabled]="pagoLoading() || !pagoMonto()"
+                class="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          {{ pagoLoading() ? 'Registrando…' : 'Confirmar pago' }}
+        </button>
+        <button type="button" (click)="cerrarPago()" [disabled]="pagoLoading()"
+                class="rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-400">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+}
